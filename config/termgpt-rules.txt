@@ -1,0 +1,144 @@
+# termgpt Dangerous Command Ruleset
+# -----------------------------------------
+# Format:
+#   [LEVEL] <regex>
+#   [LEVEL_LITERAL] <exact command>    ← for literal matches
+#
+# LEVEL can be: CRITICAL, HIGH, MEDIUM, LOW
+#
+# About this file:
+# The first time I showed termgpt to a friend, they asked for a fork bomb.
+# I had `eval` open to quickly test commands in a sandboxed shell — but it hit me:
+# someone could brick their system with this tool if the don't know what they're doing.
+#
+# So I started writing this file: a growing list of patterns to detect
+# dangerous shell commands, flag them, and prevent copy/paste disasters.
+#
+# It's by no means complete, but it's here to be extended and improved.
+#
+# -----------------------------------------
+
+# ────────────── CRITICAL ──────────────
+
+[CRITICAL] sudo[[:space:]]+dd[[:space:]]+if=/dev/(zero|urandom)[[:space:]]+of=/dev/[a-z0-9]+\b([[:space:]]+\S+)*
+[CRITICAL] dd[[:space:]]+if=/dev/(zero|urandom)[[:space:]]+of=/dev/[a-z0-9]+\b([[:space:]]+\S+)*
+[CRITICAL] sudo[[:space:]]+rm[[:space:]]+-[rf]+[[:space:]]+(/[[:space:]]*|//+|--no-preserve-root)
+[CRITICAL] rm[[:space:]]+-[rf]+[[:space:]]+(/[[:space:]]*|//+|--no-preserve-root)
+[CRITICAL] sudo[[:space:]]+mkfs[[:space:]]+-t[[:space:]]+\w+[[:space:]]+/dev/[a-z]+
+[CRITICAL] mkfs[[:space:]]+-t[[:space:]]+\w+[[:space:]]+/dev/[a-z]+
+[CRITICAL] sudo[[:space:]]+wipefs([[:space:]]|$)
+[CRITICAL] wipefs([[:space:]]|$)
+[CRITICAL] (curl|wget)[[:space:]]+https?://\S+[[:space:]]*\|[[:space:]]*(bash|sh|zsh)
+[CRITICAL] echo[[:space:]]+['"].*?['"][[:space:]]+>[[:space:]]+/etc/(passwd|shadow|group|sudoers)
+[CRITICAL] \|[[:space:]]*tee[[:space:]]+/dev/[a-z]+
+[CRITICAL] base64[[:space:]]+-d[[:space:]]+.*\|[[:space:]]*(bash|sh|zsh)
+[CRITICAL] find[[:space:]]+.*-exec[[:space:]]+\S*[[:space:]]+rm[[:space:]]+-[rf]*[[:space:]]+{}\;
+[CRITICAL] ^sudo[[:space:]]+-i$
+[CRITICAL] ^sudo[[:space:]]+!!$
+[CRITICAL] sudo[[:space:]]+rm[[:space:]]+-[rf]+[[:space:]]+/System/?\*
+[CRITICAL] rm[[:space:]]+-[rf]+[[:space:]]+/((System|bin|sbin|etc|usr|lib|var|boot|root)(/|[[:space:]]|$))
+[CRITICAL] sudo[[:space:]]+rm[[:space:]]+-r(f)?[[:space:]]+/usr/share/(doc|man|groff|info|lintian)\S*
+[CRITICAL] rm[[:space:]]+-r(f)?[[:space:]]+/usr/share/(doc|man|groff|info|lintian)\S*
+[CRITICAL] sudo[[:space:]]+rm[[:space:]]+-r(f)?[[:space:]]+/var/lib/apt/lists\S*
+[CRITICAL] rm[[:space:]]+-r(f)?[[:space:]]+/var/lib/apt/lists\S*
+[CRITICAL] sudo[[:space:]]+rm[[:space:]]+-rf[[:space:]]+/var/lib/dpkg/info/[^[:space:]]*\.list
+[CRITICAL] rm[[:space:]]+-rf[[:space:]]+/var/lib/dpkg/info/\*\.list
+[CRITICAL] cat[[:space:]]+>[[:space:]]+/etc/(passwd|shadow|group|sudoers).*<<
+[CRITICAL] ^:\(\)[[:space:]]*\{[[:space:]]*:|:[[:space:]]*&[[:space:]]*\};[[:space:]]*:$  # Classic fork bomb
+[CRITICAL] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+rm[[:space:]]+-[rf]+[[:space:]]+/.*;[[:space:]]+done$
+[CRITICAL] ^yes[[:space:]]*\|[[:space:]]*while[[:space:]]+read.*\|[[:space:]]*while[[:space:]]+read
+[CRITICAL] ^yes[[:space:]]*\|[[:space:]]*bash[[:space:]]+-c[[:space:]]+['"]exec[[:space:]]+bash.*\$0.*['"][[:space:]]*&?$
+[CRITICAL] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+/(bin/)?(ba|z|sh)\w*[[:space:]]+&[[:space:]]+done$
+[CRITICAL] ^while[[:space:]]+:;[[:space:]]+do[[:space:]]+\([[:space:]]*:[[:space:]]*\);[[:space:]]+done$
+[CRITICAL] rm[[:space:]]+-[rf]+[[:space:]]+(\.\./)+\S*
+[CRITICAL] cat[[:space:]]+>[[:space:]]+/etc/(hosts|ssh/sshd_config)
+[CRITICAL] echo[[:space:]]+.*[[:space:]]+>[[:space:]]+/etc/(hosts|ssh/sshd_config)
+[CRITICAL] sudo[[:space:]]+-u[[:space:]][^[:space:]]+[[:space:]]+.*
+[CRITICAL] echo[[:space:]]+.*[[:space:]]+>[[:space:]]+/etc/fstab
+[CRITICAL] (nc|telnet)[[:space:]]+\S+[[:space:]]+\d+[[:space:]]+<.*$
+[CRITICAL] (curl|wget)[[:space:]]+https?://\S+[[:space:]]*\|[[:space:]]*bash[[:space:]]+-s
+[CRITICAL] (echo|crontab)[[:space:]]+.*[[:space:]]+>[[:space:]]+/etc/crontab
+[CRITICAL] echo[[:space:]]+.*[[:space:]]+>[[:space:]]+/etc/issue
+[CRITICAL] echo[[:space:]]+.*[[:space:]]+>[[:space:]]+/etc/issue
+[CRITICAL] echo[[:space:]]+.*[[:space:]]+>[[:space:]]+/etc/fstab
+[CRITICAL] (nc|telnet)[[:space:]]+\S+[[:space:]]+\d+[[:space:]]+<.*$
+[CRITICAL] sudo[[:space:]]+-u[[:space:]][^[:space:]]+[[:space:]]+.*
+
+# ────────────── CRITICAL_LITERAL ──────────────
+
+[CRITICAL_LITERAL] :(){ :|:& };:
+[CRITICAL_LITERAL] :(){ :|: & };:
+[CRITICAL_LITERAL] :() { :|: & }; :
+
+# ────────────── HIGH ──────────────
+
+[HIGH] truncate[[:space:]]+-s[[:space:]]+[0-9]+G
+[HIGH] cat[[:space:]]+/etc/shadow
+[HIGH] rm[[:space:]]+-[rf]+[[:space:]]+\S+
+[HIGH] sudo[[:space:]]+(rm|truncate|chown|chmod|dd|mkfs|wipefs)[[:space:]]+.*
+[HIGH] (wget|curl)[[:space:]]+.*-O[[:space:]]+-.*
+[HIGH] .*[[:space:]]+>>[[:space:]]+/etc/.*
+[HIGH] .*[[:space:]]+2>[[:space:]]+/dev/.*
+[HIGH] .*[[:space:]]+&>[[:space:]]+/dev/.*
+[HIGH] apt-get[[:space:]]+clean
+[HIGH] chmod[[:space:]]+.*[[:space:]]+/etc/(shadow|passwd|group|sudoers)
+[HIGH] (echo|tee)[[:space:]]+.*>[[:space:]]+/etc/resolv.conf
+[HIGH] \|[[:space:]]*tee[[:space:]]+/etc/resolv.conf
+[HIGH] ifconfig[[:space:]]+\S+[[:space:]]+down
+[HIGH] ip[[:space:]]+link[[:space:]]+set[[:space:]]+\S+[[:space:]]+down
+[HIGH] ip[[:space:]]+addr[[:space:]]+flush[[:space:]]+dev[[:space:]]+\S+
+[HIGH] (ifconfig|ip)[[:space:]]+(link|addr|route|rule)[[:space:]]+(add|del|flush|set)[[:space:]]+\S+
+[HIGH] ^(useradd|userdel|groupadd|groupdel)[[:space:]]+\S+
+[HIGH] sudo[[:space:]]+(useradd|userdel|groupadd|groupdel)[[:space:]]+\S+
+[HIGH] sudo[[:space:]]+apt-get[[:space:]]+(upgrade|dist-upgrade|remove|purge)[[:space:]]+
+[HIGH] sudo[[:space:]]+yum[[:space:]]+(install|remove|update)[[:space:]]+
+[HIGH] ifconfig[[:space:]]+(eth0|wlan0)[[:space:]]+down
+[HIGH] sudo[[:space:]]+service[[:space:]]+\S+[[:space:]]+(stop|restart)
+[HIGH] sudo[[:space:]]+/etc/init.d/\S+[[:space:]]+(stop|restart)
+[HIGH] sudo[[:space:]]+(apt|yum)[[:space:]]+install[[:space:]]+\S+.*\|\|[[:space:]]*rm[[:space:]]+-rf[[:space:]]+/
+[HIGH] sudo[[:space:]]+/etc/init.d/(ssh|networking)[[:space:]]+(stop|restart)
+[HIGH] systemctl[[:space:]]+(stop|disable)[[:space:]]+(ssh|networking)
+
+# ────────────── MEDIUM ──────────────
+
+[MEDIUM] dd[[:space:]]+if=/dev/(zero|urandom)[[:space:]]+of=.*[^/dev].*
+[MEDIUM] dd[[:space:]]+if=.*of=/dev/null
+[MEDIUM] (chmod|chown)[[:space:]]+-R[[:space:]]+/.*$
+[MEDIUM] iptables[[:space:]]+-F$
+[MEDIUM] (ufw|firewalld)[[:space:]]+(disable|stop)$
+[MEDIUM] history[[:space:]]*-c$
+[MEDIUM] visudo
+[MEDIUM] sudo[[:space:]]+visudo
+[MEDIUM] sudoedit[[:space:]]+/etc/(sudoers|sudoers\.d/.*)
+[MEDIUM] ::(system|exec)\(.*\)
+[MEDIUM] ^while[[:space:]]+:;[[:space:]]+do[[:space:]]+:;[[:space:]]+done[[:space:]]+&$
+[MEDIUM] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+.*done;[[:space:]]+done;?$
+[MEDIUM] ^yes[[:space:]]+.*>[[:space:]]+/dev/null$
+[MEDIUM] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+\(.*\);[[:space:]]+done[[:space:]]+&$
+[MEDIUM] ^(yes[[:space:]]*\|[[:space:]]*)+yes$
+[MEDIUM] ^yes[[:space:]]*\|.*xargs.*sh[[:space:]]+-c.*
+[MEDIUM] ^while[[:space:]]+true;[[:space:]]*do[[:space:]]+.*;[[:space:]]*done[[:space:]]*&$
+[MEDIUM] bash[[:space:]]+-c[[:space:]]+['"].*exec[[:space:]]+bash['"]
+[MEDIUM] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+\(.*\);[[:space:]]+done[[:space:]]*&?$
+[MEDIUM] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+:;[[:space:]]+done$
+[MEDIUM] ^(while[[:space:]]+:;[[:space:]]+do[[:space:]]+sleep[[:space:]]+\d+;[[:space:]]+done[[:space:]]+&[[:space:]]*)+$
+[MEDIUM] systemctl[[:space:]]+(stop|disable|mask)[[:space:]]+\S+
+[MEDIUM] systemctl[[:space:]]+restart[[:space:]]+(sshd|network|firewalld|iptables)
+[MEDIUM] git[[:space:]]+clone[[:space:]]+(https?|ssh)://.*\.git[[:space:]]*&&[[:space:]]*make[[:space:]]+install
+[MEDIUM] git[[:space:]]+clone[[:space:]]+(https?|ssh)://.*\.git[[:space:]]*&&[[:space:]]*bash[[:space:]]+setup.sh
+[MEDIUM] cp[[:space:]]+-r[[:space:]]+/.*  
+[MEDIUM] mv[[:space:]]+.*[[:space:]]+/.*  
+[MEDIUM] \|\|[[:space:]]*sh[[:space:]]+-c[[:space:]]+  
+[MEDIUM] &&[[:space:]]*sh[[:space:]]+-c[[:space:]]+
+
+# ────────────── MEDIUM_LITERAL ──────────────
+
+[MEDIUM_LITERAL] while true; do :; done
+
+# ────────────── LOW ──────────────
+
+[LOW] nc[[:space:]]+\S+[[:space:]]+\d+$
+[LOW] ping[[:space:]]*$
+[LOW] traceroute[[:space:]]*$
+[LOW] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+echo[[:space:]]+.*;[[:space:]]+done$
+[LOW] ^yes[[:space:]]*\|.*>[[:space:]]*/dev/null[[:space:]]*&$
