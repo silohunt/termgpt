@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/sh
 #
 # termgpt-test.sh — Regression test suite for dangerous command detection
 #
@@ -21,24 +21,32 @@
 # - `termgpt-rules.txt` must exist and be properly formatted.
 
 
-RULES_FILE="$HOME/.config/termgpt/termgpt-rules.txt"
-source "$HOME/.config/termgpt/lib/termgpt-check.sh"
+# Set TERMGPT_RULES_PATH to use test rules
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export TERMGPT_RULES_PATH="$SCRIPT_DIR/../share/termgpt/rules.txt"
+
+# Source the check script
+if [ -f "$SCRIPT_DIR/../lib/termgpt-check.sh" ]; then
+  . "$SCRIPT_DIR/../lib/termgpt-check.sh"
+else
+  echo "Error: Cannot find termgpt-check.sh"
+  exit 1
+fi
 
 FAILED=0
 
 test_command() {
-  local cmd="$1"
+  cmd="$1"
   echo
   echo "Testing: $cmd"
 
-  local match_level
   match_level=$(check_command_danger_level "$cmd" || true)
 
-  if [[ -n "$match_level" ]]; then
+  if [ -n "$match_level" ]; then
     echo "MATCHED: $match_level"
   else
     echo "NO MATCH"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
   fi
 }
 
@@ -111,7 +119,7 @@ test_command "yes | head -n1000000 | awk '{print}' > /dev/null &"
 
 # ────────────── Final result ──────────────
 echo
-if (( FAILED > 0 )); then
+if [ "$FAILED" -gt 0 ]; then
   echo "FAILED: $FAILED test(s) did not match any rule."
   exit 1
 else

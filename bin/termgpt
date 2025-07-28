@@ -176,6 +176,31 @@ fi
 
 . "$CHECK_SCRIPT"
 
+# Source history logging if available
+find_history_lib() {
+  if [ -f "$(dirname "$0")/../lib/termgpt-history.sh" ]; then
+    echo "$(dirname "$0")/../lib/termgpt-history.sh"
+  elif [ -f "/usr/local/lib/termgpt/termgpt-history.sh" ]; then
+    echo "/usr/local/lib/termgpt/termgpt-history.sh"
+  elif [ -f "/usr/lib/termgpt/termgpt-history.sh" ]; then
+    echo "/usr/lib/termgpt/termgpt-history.sh"
+  elif [ -f "$HOME/.config/termgpt/lib/termgpt-history.sh" ]; then
+    echo "$HOME/.config/termgpt/lib/termgpt-history.sh"
+  else
+    return 1
+  fi
+}
+
+HISTORY_LIB=$(find_history_lib)
+if [ -n "$HISTORY_LIB" ] && [ -r "$HISTORY_LIB" ] && [ -f "$HISTORY_LIB" ]; then
+  . "$HISTORY_LIB"
+  init_history
+fi
+
+# Generate session ID for this run
+TERMGPT_SESSION_ID=$(date +%s)
+export TERMGPT_SESSION_ID
+
 MATCH_LEVEL=$(check_command_danger_level "$COMMAND" || true)
 if [ -n "$MATCH_LEVEL" ]; then
   echo "$MATCH_LEVEL: This command may be dangerous. Review carefully."
@@ -205,24 +230,35 @@ while true; do
         case "$CLIPBOARD_CMD" in
           "pbcopy")
             echo "$COMMAND" | pbcopy && echo "Command copied to clipboard."
+            USER_ACTION="copied"
             ;;
           "xclip -selection clipboard")
             echo "$COMMAND" | xclip -selection clipboard && echo "Command copied to clipboard."
+            USER_ACTION="copied"
             ;;
           "xsel --clipboard --input")
             echo "$COMMAND" | xsel --clipboard --input && echo "Command copied to clipboard."
+            USER_ACTION="copied"
             ;;
           "wl-copy")
             echo "$COMMAND" | wl-copy && echo "Command copied to clipboard."
+            USER_ACTION="copied"
             ;;
           *)
             echo "Unsupported clipboard command: $CLIPBOARD_CMD"
             echo "The command is: $COMMAND"
+            USER_ACTION="copy_failed"
             ;;
         esac
       else
         echo "No clipboard command available for this platform."
         echo "The command is: $COMMAND"
+        USER_ACTION="copy_unavailable"
+      fi
+      
+      # Log the interaction
+      if command -v log_interaction >/dev/null 2>&1; then
+        log_interaction "$USER_PROMPT" "$COMMAND" "$MATCH_LEVEL" "$USER_ACTION"
       fi
       exit 0
       ;;
@@ -244,29 +280,44 @@ while true; do
         case "$OPEN_CMD" in
           "open")
             open "$URL"
+            USER_ACTION="explained"
             ;;
           "xdg-open")
             xdg-open "$URL"
+            USER_ACTION="explained"
             ;;
           "gnome-open")
             gnome-open "$URL"
+            USER_ACTION="explained"
             ;;
           "kde-open")
             kde-open "$URL"
+            USER_ACTION="explained"
             ;;
           *)
             echo "Unsupported URL opener: $OPEN_CMD"
             echo "Please visit: $URL"
+            USER_ACTION="explain_failed"
             ;;
         esac
       else
         echo "No URL opener available. Please visit:"
         echo "$URL"
+        USER_ACTION="explain_unavailable"
+      fi
+      
+      # Log the interaction
+      if command -v log_interaction >/dev/null 2>&1; then
+        log_interaction "$USER_PROMPT" "$COMMAND" "$MATCH_LEVEL" "$USER_ACTION"
       fi
       exit 0
       ;;
     [Qq]|*)
       echo "Exiting."
+      # Log the interaction as dismissed
+      if command -v log_interaction >/dev/null 2>&1; then
+        log_interaction "$USER_PROMPT" "$COMMAND" "$MATCH_LEVEL" "dismissed"
+      fi
       exit 0
       ;;
   esac

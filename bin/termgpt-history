@@ -1,0 +1,207 @@
+#!/bin/sh
+#
+# termgpt-history - History management utility for TermGPT
+#
+# Manages the TermGPT interaction history for fine-tuning and analysis
+#
+# Usage: termgpt-history <command> [options]
+
+set -eu
+
+# Source history library
+find_history_lib() {
+  if [ -f "$(dirname "$0")/../lib/termgpt-history.sh" ]; then
+    echo "$(dirname "$0")/../lib/termgpt-history.sh"
+  elif [ -f "/usr/local/lib/termgpt/termgpt-history.sh" ]; then
+    echo "/usr/local/lib/termgpt/termgpt-history.sh"
+  elif [ -f "/usr/lib/termgpt/termgpt-history.sh" ]; then
+    echo "/usr/lib/termgpt/termgpt-history.sh"
+  elif [ -f "$HOME/.config/termgpt/lib/termgpt-history.sh" ]; then
+    echo "$HOME/.config/termgpt/lib/termgpt-history.sh"
+  else
+    return 1
+  fi
+}
+
+HISTORY_LIB=$(find_history_lib)
+if [ -z "$HISTORY_LIB" ] || [ ! -r "$HISTORY_LIB" ]; then
+  echo "Error: Cannot find termgpt-history.sh library"
+  echo "Please ensure TermGPT is properly installed"
+  exit 1
+fi
+
+. "$HISTORY_LIB"
+
+# Show help
+show_help() {
+  cat << EOF
+TermGPT History Management
+
+Usage: termgpt-history <command> [options]
+
+Commands:
+    stats                   Show history statistics
+    export <file> [format]  Export history for training
+                           Formats: jsonl, claude, csv (default: jsonl)
+    clear                   Clear all history (with confirmation)
+    disable                 Disable history logging
+    enable                  Enable history logging
+    show [n]               Show last n entries (default: 10)
+    
+Environment Variables:
+    TERMGPT_HISTORY        Set to 'false' to disable logging
+    TERMGPT_HISTORY_FILE   Custom history file location
+    TERMGPT_HISTORY_MAX    Maximum entries before rotation (default: 1000)
+
+Examples:
+    termgpt-history stats
+    termgpt-history export training_data.jsonl
+    termgpt-history export claude_format.md claude
+    termgpt-history show 20
+    termgpt-history clear
+EOF
+}
+
+# Show recent history entries
+show_recent() {
+  count="${1:-10}"
+  
+  if [ ! -f "$HISTORY_FILE" ]; then
+    echo "No history file found"
+    return 1
+  fi
+  
+  echo "Last $count history entries:"
+  echo "=========================="
+  
+  tail -n "$count" "$HISTORY_FILE" | while IFS= read -r line; do
+    if [ -n "$line" ] && command -v jq >/dev/null 2>&1; then
+      timestamp=$(echo "$line" | jq -r '.timestamp' 2>/dev/null)
+      platform=$(echo "$line" | jq -r '.system_context.platform' 2>/dev/null)
+      user_input=$(echo "$line" | jq -r '.conversation[0].content' 2>/dev/null)
+      command_output=$(echo "$line" | jq -r '.conversation[1].content' 2>/dev/null)
+      safety=$(echo "$line" | jq -r '.metadata.safety_level' 2>/dev/null)
+      action=$(echo "$line" | jq -r '.metadata.user_action' 2>/dev/null)
+      
+      echo
+      echo "Time: $timestamp"
+      echo "Platform: $platform"
+      if [ "$safety" != "null" ] && [ -n "$safety" ]; then
+        echo "Safety: $safety"
+      fi
+      echo "User: $user_input"
+      echo "Command: $command_output"
+      echo "Action: $action"
+      echo "---"
+    fi
+  done
+}
+
+# Clear history with confirmation
+clear_history() {
+  if [ ! -f "$HISTORY_FILE" ]; then
+    echo "No history file to clear"
+    return 0
+  fi
+  
+  total_entries=$(wc -l < "$HISTORY_FILE" 2>/dev/null || echo "0")
+  echo "This will permanently delete $total_entries history entries."
+  printf "Are you sure? [y/N] "
+  read -r response
+  
+  case "$response" in
+    [Yy]*)
+      if rm "$HISTORY_FILE" 2>/dev/null; then
+        echo "History cleared successfully"
+      else
+        echo "Error: Failed to clear history file"
+        return 1
+      fi
+      ;;
+    *)
+      echo "History clear cancelled"
+      ;;
+  esac
+}
+
+# Enable/disable history logging
+toggle_history() {
+  action="$1"
+  config_file="$HOME/.config/termgpt/config"
+  
+  # Create config directory if needed
+  mkdir -p "$(dirname "$config_file")" 2>/dev/null
+  
+  case "$action" in
+    enable)
+      # Remove any existing TERMGPT_HISTORY setting and add enabled
+      if [ -f "$config_file" ]; then
+        grep -v "TERMGPT_HISTORY=" "$config_file" > "${config_file}.tmp" 2>/dev/null || touch "${config_file}.tmp"
+        mv "${config_file}.tmp" "$config_file"
+      fi
+      echo "TERMGPT_HISTORY=true" >> "$config_file"
+      echo "History logging enabled"
+      echo "Note: You may need to restart your shell or run: source ~/.config/termgpt/config"
+      ;;
+    disable)
+      # Remove any existing TERMGPT_HISTORY setting and add disabled
+      if [ -f "$config_file" ]; then
+        grep -v "TERMGPT_HISTORY=" "$config_file" > "${config_file}.tmp" 2>/dev/null || touch "${config_file}.tmp"
+        mv "${config_file}.tmp" "$config_file"
+      fi
+      echo "TERMGPT_HISTORY=false" >> "$config_file"
+      echo "History logging disabled"
+      echo "Note: You may need to restart your shell or run: source ~/.config/termgpt/config"
+      ;;
+  esac
+}
+
+# Main command processing
+main() {
+  if [ $# -eq 0 ]; then
+    show_help
+    exit 1
+  fi
+  
+  command="$1"
+  shift
+  
+  case "$command" in
+    stats)
+      show_history_stats
+      ;;
+    export)
+      if [ $# -eq 0 ]; then
+        echo "Error: Export requires a filename"
+        echo "Usage: termgpt-history export <filename> [format]"
+        exit 1
+      fi
+      filename="$1"
+      format="${2:-jsonl}"
+      export_history_for_training "$filename" "$format"
+      ;;
+    show)
+      count="${1:-10}"
+      show_recent "$count"
+      ;;
+    clear)
+      clear_history
+      ;;
+    enable)
+      toggle_history "enable"
+      ;;
+    disable)
+      toggle_history "disable"
+      ;;
+    -h|--help)
+      show_help
+      ;;
+    *)
+      echo "Error: Unknown command '$command'"
+      echo "Run 'termgpt-history --help' for usage information"
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
