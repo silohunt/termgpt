@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/sh
 #
 # termgpt — Translate natural language into safe, POSIX-compliant shell commands using a local LLM
 #
@@ -13,25 +13,81 @@
 # - macOS tools: pbcopy (clipboard), open (explainshell); adjust for Linux as needed
 #
 # Notes:
-# - Zsh script with strict error handling (set -euo pipefail).
+# - POSIX sh script with strict error handling (set -eu).
 # - Commands are checked using `check_command_danger_level()` before display.
 # - Quick actions via single-key menu: copy [c], explain [e], quit [q].
 #
 # TODO (dev): Add platform detection for clipboard (xclip) and URL opening (xdg-open) support on Linux
 
-set -euo pipefail
+set -eu
 
 MODEL="codellama:7b-instruct"
 API_URL="http://localhost:11434/api/generate"
 
+# Source platform configuration if available
+find_platform_config() {
+  if [ -f "$(dirname "$0")/../lib/termgpt-platform.sh" ]; then
+    echo "$(dirname "$0")/../lib/termgpt-platform.sh"
+  elif [ -f "/usr/local/lib/termgpt/termgpt-platform.sh" ]; then
+    echo "/usr/local/lib/termgpt/termgpt-platform.sh"
+  elif [ -f "/usr/lib/termgpt/termgpt-platform.sh" ]; then
+    echo "/usr/lib/termgpt/termgpt-platform.sh"
+  elif [ -f "$HOME/.config/termgpt/platform.conf" ]; then
+    echo "$HOME/.config/termgpt/platform.conf"
+  else
+    return 1
+  fi
+}
+
+PLATFORM_CONFIG=$(find_platform_config)
+if [ -n "$PLATFORM_CONFIG" ] && [ -r "$PLATFORM_CONFIG" ] && [ -f "$PLATFORM_CONFIG" ]; then
+  # Basic safety check - ensure file is not world-writable
+  if [ ! -w "$PLATFORM_CONFIG" ] || [ "$(stat -c %a "$PLATFORM_CONFIG" 2>/dev/null | cut -c3)" != "2" ] 2>/dev/null; then
+    . "$PLATFORM_CONFIG"
+  else
+    echo "Warning: Platform config file $PLATFORM_CONFIG is world-writable, skipping"
+  fi
+fi
+
+# Quick dependency check
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq is not installed"
+  echo "Please run ./setup.sh to install dependencies"
+  exit 1
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "Error: curl is not installed"
+  echo "Please run ./setup.sh to install dependencies"
+  exit 1
+fi
+
 USER_PROMPT="$*"
-if [[ -z "$USER_PROMPT" ]]; then
+if [ -z "$USER_PROMPT" ]; then
   echo "Usage: termgpt <natural language request>"
   exit 1
 fi
 
+# Build platform context
+PLATFORM_CONTEXT=""
+if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
+  PLATFORM_CONTEXT="Target platform: $TERMGPT_PLATFORM. "
+  if command -v get_clipboard_cmd >/dev/null 2>&1; then
+    CLIPBOARD_CMD=$(get_clipboard_cmd)
+    if [ -n "$CLIPBOARD_CMD" ]; then
+      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}Use '$CLIPBOARD_CMD' for clipboard operations. "
+    fi
+  fi
+  if command -v get_open_url_cmd >/dev/null 2>&1; then
+    OPEN_CMD=$(get_open_url_cmd)
+    if [ -n "$OPEN_CMD" ]; then
+      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}Use '$OPEN_CMD' to open files/URLs. "
+    fi
+  fi
+fi
+
 PROMPT="You are a shell command generator. Convert each natural language request into a single POSIX-compliant shell command.
-Only output the command with no extra text, explanations, markdown, or code fences.
+${PLATFORM_CONTEXT}Only output the command with no extra text, explanations, markdown, or code fences.
 Request: $USER_PROMPT"
 
 WORD_COUNT=$(echo "$PROMPT" | wc -w)
@@ -39,7 +95,7 @@ TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
 echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens"
 
 MAX_TOKENS=2000
-if (( TOKEN_ESTIMATE > MAX_TOKENS )); then
+if [ "$TOKEN_ESTIMATE" -gt "$MAX_TOKENS" ]; then
   echo "Error: Prompt exceeds maximum token limit ($MAX_TOKENS)."
   exit 1
 fi
@@ -50,17 +106,29 @@ trap 'rm -f "$HTTP_RESPONSE"' EXIT
 
 HTTP_CODE=$(curl -s -w "%{http_code}" -o "$HTTP_RESPONSE" -X POST "$API_URL" \
   -H "Content-Type: application/json" \
-  -d "$JSON")
+  -d "$JSON" 2>/dev/null || echo "000")
 
-if [[ "$HTTP_CODE" -ne 200 ]]; then
+if [ "$HTTP_CODE" = "000" ]; then
+  echo "Error: Cannot connect to Ollama at $API_URL"
+  echo
+  echo "Please ensure Ollama is running. You can:"
+  echo "  1. Run ./setup.sh to install and start Ollama"
+  echo "  2. Or start it manually with: ollama serve"
+  exit 1
+elif [ "$HTTP_CODE" -ne 200 ]; then
   echo "Error: Ollama API returned status $HTTP_CODE"
   cat "$HTTP_RESPONSE"
+  if [ "$HTTP_CODE" = "404" ]; then
+    echo
+    echo "Model '$MODEL' may not be available."
+    echo "Run ./setup.sh to download it, or manually: ollama pull $MODEL"
+  fi
   exit 1
 fi
 
 RAW=$(jq -r '.response // empty' < "$HTTP_RESPONSE" 2>/dev/null)
 
-if [[ -z "$RAW" ]]; then
+if [ -z "$RAW" ]; then
   echo "Error: Failed to parse LLM response."
   cat "$HTTP_RESPONSE"
   exit 1
@@ -69,22 +137,47 @@ fi
 CLEANED=$(echo "$RAW" | sed -e 's/^```.*$//' -e 's/`//g' -e '/^$/d')
 COMMAND=$(echo "$CLEANED" | head -n 1)
 
-if [[ -z "$COMMAND" || "$COMMAND" == "null" ]]; then
+if [ -z "$COMMAND" ] || [ "$COMMAND" = "null" ]; then
   echo "Error: No usable command returned."
   echo "$RAW"
   exit 1
 fi
 
-# Securely source the command check script
-CHECK_SCRIPT="$HOME/.config/termgpt/lib/termgpt-check.sh"
-if [[ ! -f "$CHECK_SCRIPT" || ! -O "$CHECK_SCRIPT" || ! -r "$CHECK_SCRIPT" ]]; then
-  echo "Error: Invalid or unsafe check script: $CHECK_SCRIPT"
+# Find the check script (support multiple installation methods)
+find_check_script() {
+  # 1. Check if running from development directory
+  if [ -f "$(dirname "$0")/../lib/termgpt-check.sh" ]; then
+    echo "$(dirname "$0")/../lib/termgpt-check.sh"
+  # 2. Check system installation
+  elif [ -f "/usr/local/lib/termgpt/termgpt-check.sh" ]; then
+    echo "/usr/local/lib/termgpt/termgpt-check.sh"
+  elif [ -f "/usr/lib/termgpt/termgpt-check.sh" ]; then
+    echo "/usr/lib/termgpt/termgpt-check.sh"
+  # 3. Check user config directory
+  elif [ -f "$HOME/.config/termgpt/lib/termgpt-check.sh" ]; then
+    echo "$HOME/.config/termgpt/lib/termgpt-check.sh"
+  else
+    return 1
+  fi
+}
+
+CHECK_SCRIPT=$(find_check_script)
+if [ -z "$CHECK_SCRIPT" ] || [ ! -r "$CHECK_SCRIPT" ] || [ ! -f "$CHECK_SCRIPT" ]; then
+  echo "Error: Cannot find termgpt-check.sh library"
+  echo "Please ensure TermGPT is properly installed"
   exit 1
 fi
-source "$CHECK_SCRIPT"
+
+# Basic safety check - ensure file is not world-writable
+if [ -w "$CHECK_SCRIPT" ] && [ "$(stat -c %a "$CHECK_SCRIPT" 2>/dev/null | cut -c3)" = "2" ] 2>/dev/null; then
+  echo "Error: Check script $CHECK_SCRIPT is world-writable, refusing to source"
+  exit 1
+fi
+
+. "$CHECK_SCRIPT"
 
 MATCH_LEVEL=$(check_command_danger_level "$COMMAND" || true)
-if [[ -n "$MATCH_LEVEL" ]]; then
+if [ -n "$MATCH_LEVEL" ]; then
   echo "$MATCH_LEVEL: This command may be dangerous. Review carefully."
 fi
 
@@ -99,19 +192,77 @@ echo "  [e] Explain on explainshell.com"
 echo "  [q] Quit"
 
 while true; do
-  read -r "ACTION?What would you like to do? [c/e/q] "
+  printf "What would you like to do? [c/e/q] "
+  read -r ACTION
   case "$ACTION" in
     [Cc])
-      if command -v pbcopy &>/dev/null; then
-        echo "$COMMAND" | pbcopy && echo "Command copied to clipboard."
+      CLIPBOARD_CMD=""
+      if command -v get_clipboard_cmd >/dev/null 2>&1; then
+        CLIPBOARD_CMD=$(get_clipboard_cmd)
+      fi
+      
+      if [ -n "$CLIPBOARD_CMD" ]; then
+        case "$CLIPBOARD_CMD" in
+          "pbcopy")
+            echo "$COMMAND" | pbcopy && echo "Command copied to clipboard."
+            ;;
+          "xclip -selection clipboard")
+            echo "$COMMAND" | xclip -selection clipboard && echo "Command copied to clipboard."
+            ;;
+          "xsel --clipboard --input")
+            echo "$COMMAND" | xsel --clipboard --input && echo "Command copied to clipboard."
+            ;;
+          "wl-copy")
+            echo "$COMMAND" | wl-copy && echo "Command copied to clipboard."
+            ;;
+          *)
+            echo "Unsupported clipboard command: $CLIPBOARD_CMD"
+            echo "The command is: $COMMAND"
+            ;;
+        esac
       else
-        echo "Clipboard command 'pbcopy' not found."
+        echo "No clipboard command available for this platform."
+        echo "The command is: $COMMAND"
       fi
       exit 0
       ;;
     [Ee])
+      if ! command -v python3 >/dev/null 2>&1; then
+        echo "Python3 is required for URL encoding but not installed."
+        exit 1
+      fi
+      
       ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$COMMAND")
-      open "https://explainshell.com/explain?cmd=$ENCODED"
+      URL="https://explainshell.com/explain?cmd=$ENCODED"
+      
+      OPEN_CMD=""
+      if command -v get_open_url_cmd >/dev/null 2>&1; then
+        OPEN_CMD=$(get_open_url_cmd)
+      fi
+      
+      if [ -n "$OPEN_CMD" ]; then
+        case "$OPEN_CMD" in
+          "open")
+            open "$URL"
+            ;;
+          "xdg-open")
+            xdg-open "$URL"
+            ;;
+          "gnome-open")
+            gnome-open "$URL"
+            ;;
+          "kde-open")
+            kde-open "$URL"
+            ;;
+          *)
+            echo "Unsupported URL opener: $OPEN_CMD"
+            echo "Please visit: $URL"
+            ;;
+        esac
+      else
+        echo "No URL opener available. Please visit:"
+        echo "$URL"
+      fi
       exit 0
       ;;
     [Qq]|*)
