@@ -1,0 +1,32 @@
+# Alpine Linux testing environment for TermGPT (local files)
+# Tests your current local code, not GitHub
+FROM alpine:latest
+
+# Install essential packages
+RUN apk add --no-cache \
+    bash \
+    curl \
+    git \
+    jq \
+    python3 \
+    py3-urllib3 \
+    sudo \
+    shadow \
+    xclip \
+    xdg-utils
+
+# Create test user with sudo access
+RUN adduser -D testuser && \
+    echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Copy local TermGPT files (not from GitHub)
+COPY --chown=testuser:testuser . /home/testuser/termgpt
+
+# Switch to test user
+USER testuser
+WORKDIR /home/testuser/termgpt
+
+# Make scripts executable
+RUN chmod +x bin/termgpt bin/termgpt-history setup.sh uninstall.sh tests/*.sh
+
+CMD ["/bin/sh"]

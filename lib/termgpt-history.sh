@@ -49,18 +49,7 @@ get_system_context() {
     package_manager=$(get_package_manager)
   fi
   
-  cat << EOF
-{
-  "platform": "$platform",
-  "os": "$os_version",
-  "shell": "$shell_name",
-  "tools": {
-    "clipboard": "$clipboard_tool",
-    "url_opener": "$url_opener",
-    "package_manager": "$package_manager"
-  }
-}
-EOF
+  echo "{\"platform\":\"$platform\",\"os\":\"$os_version\",\"shell\":\"$shell_name\",\"tools\":{\"clipboard\":\"$clipboard_tool\",\"url_opener\":\"$url_opener\",\"package_manager\":\"$package_manager\"}}"
 }
 
 # Escape JSON strings
@@ -96,31 +85,8 @@ log_interaction() {
   escaped_safety=$(json_escape "$safety_level")
   escaped_action=$(json_escape "$user_action")
   
-  # Create JSON entry in format suitable for fine-tuning
-  json_entry=$(cat << EOF
-{
-  "timestamp": "$timestamp",
-  "session_id": "$session_id",
-  "system_context": $system_context,
-  "conversation": [
-    {
-      "role": "user",
-      "content": "$escaped_prompt"
-    },
-    {
-      "role": "assistant",
-      "content": "$escaped_command"
-    }
-  ],
-  "metadata": {
-    "safety_level": "$escaped_safety",
-    "user_action": "$escaped_action",
-    "model": "${MODEL:-codellama:7b-instruct}",
-    "version": "termgpt-1.0"
-  }
-}
-EOF
-)
+  # Create JSON entry in format suitable for fine-tuning (compact JSONL format)
+  json_entry="{\"timestamp\":\"$timestamp\",\"session_id\":\"$session_id\",\"system_context\":$system_context,\"conversation\":[{\"role\":\"user\",\"content\":\"$escaped_prompt\"},{\"role\":\"assistant\",\"content\":\"$escaped_command\"}],\"metadata\":{\"safety_level\":\"$escaped_safety\",\"user_action\":\"$escaped_action\",\"model\":\"${MODEL:-codellama:7b-instruct}\",\"version\":\"termgpt-1.0\"}}"
   
   # Append to history file
   if echo "$json_entry" >> "$HISTORY_FILE" 2>/dev/null; then

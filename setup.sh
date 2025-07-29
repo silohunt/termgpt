@@ -250,9 +250,8 @@ TERMGPT_PLATFORM="$os"
 TERMGPT_ARCH="$arch"
 
 # Source the platform library
-PLATFORM_LIB="\$(dirname "\$0")/lib/termgpt-platform.sh"
-if [ -f "\$PLATFORM_LIB" ]; then
-  . "\$PLATFORM_LIB"
+if [ -f "\$HOME/.config/termgpt/lib/termgpt-platform.sh" ]; then
+  . "\$HOME/.config/termgpt/lib/termgpt-platform.sh"
 elif [ -f "/usr/local/lib/termgpt/termgpt-platform.sh" ]; then
   . "/usr/local/lib/termgpt/termgpt-platform.sh"
 elif [ -f "/usr/lib/termgpt/termgpt-platform.sh" ]; then
