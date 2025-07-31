@@ -12,8 +12,66 @@
 set -eu
 
 # Configuration
-MODEL="codellama:7b-instruct"
+DEFAULT_MODEL="codellama:7b-instruct"
+FAST_MODEL="codellama:7b-instruct-q4_0"
 OLLAMA_API="http://localhost:11434/api/tags"
+
+# Detect GPU availability
+detect_gpu() {
+  # Check for NVIDIA GPU
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    if nvidia-smi >/dev/null 2>&1; then
+      echo "nvidia"
+      return
+    fi
+  fi
+  
+  # Check for AMD GPU (Linux)
+  if [ -d "/sys/class/drm" ]; then
+    for card in /sys/class/drm/card*/device/vendor; do
+      if [ -r "$card" ] && grep -q "0x1002" "$card" 2>/dev/null; then
+        echo "amd"
+        return
+      fi
+    done
+  fi
+  
+  # Check for Apple Silicon GPU (macOS)
+  if [ "$(uname)" = "Darwin" ]; then
+    if sysctl -n machdep.cpu.brand_string 2>/dev/null | grep -q "Apple M[0-9]"; then
+      echo "apple_silicon"
+      return
+    fi
+  fi
+  
+  echo "none"
+}
+
+# Recommend model based on hardware
+recommend_model() {
+  gpu_type=$(detect_gpu)
+  
+  case "$gpu_type" in
+    nvidia|amd|apple_silicon)
+      info "GPU detected: $gpu_type"
+      info "Recommended model: $DEFAULT_MODEL (full precision for best quality)"
+      echo "$DEFAULT_MODEL"
+      ;;
+    *)
+      info "No GPU detected - CPU only"
+      info "Recommended model: $FAST_MODEL (quantized for faster performance)"
+      echo "$FAST_MODEL"
+      ;;
+  esac
+}
+
+# Allow override via environment variable
+if [ -n "${TERMGPT_MODEL:-}" ]; then
+  MODEL="$TERMGPT_MODEL"
+  info "Using model from TERMGPT_MODEL environment variable: $MODEL"
+else
+  MODEL=$(recommend_model)
+fi
 
 # Colors for output (if terminal supports it)
 if [ -t 1 ]; then
@@ -186,7 +244,14 @@ download_model() {
     return 0
   fi
   
-  info "Downloading model '$MODEL' (this may take several minutes)..."
+  info "Downloading model '$MODEL'"
+  if [ "$MODEL" = "$FAST_MODEL" ]; then
+    info "Quantized model (~2GB, optimized for CPU performance)"
+  else
+    info "Full precision model (~4GB, best quality)"
+  fi
+  info "This may take several minutes..."
+  
   if ollama pull "$MODEL"; then
     success "Model '$MODEL' downloaded successfully"
     return 0
@@ -248,6 +313,7 @@ create_platform_config() {
 
 TERMGPT_PLATFORM="$os"
 TERMGPT_ARCH="$arch"
+TERMGPT_MODEL="$MODEL"
 
 # Source the platform library
 if [ -f "\$HOME/.config/termgpt/lib/termgpt-platform.sh" ]; then
