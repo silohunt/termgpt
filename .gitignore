@@ -1,16 +1,72 @@
 # OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Editor files
 .vscode/
 .idea/
 *.swp
 *~
+*.sublime-project
+*.sublime-workspace
 
-# Logs
+# Logs and temporary files
 *.log
+*.tmp
+*.temp
+*.cache
 
 # API keys and sensitive data
 .env
+.env.local
 config/credentials.json
+secrets/
+
+# Development and testing
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage/
+
+# User data and privacy
+history.jsonl
+*.jsonl
+user_data/
+personal/
+private/
+
+# Development notes
+CLAUDE.md
+TODO.md
+NOTES.md
+*.notes
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local configuration
+.local/
+local_config/
+*.local
+
+# Test outputs
+test_output/
+test_results/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Personal scripts
+my_*.sh
+personal_*.sh
