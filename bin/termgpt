@@ -24,6 +24,28 @@ set -eu
 MODEL="codellama:7b-instruct"
 API_URL="http://localhost:11434/api/generate"
 
+# Cross-platform function to check if a file is world-writable
+is_world_writable() {
+  file="$1"
+  if [ "$(uname)" = "Darwin" ]; then
+    # macOS: use stat -f
+    perms=$(stat -f "%p" "$file" 2>/dev/null || echo "0")
+    # Extract last 3 digits and check if world-writable (xx2, xx3, xx6, xx7)
+    world_perm=$((perms % 10))
+  else
+    # Linux: use stat -c
+    perms=$(stat -c "%a" "$file" 2>/dev/null || echo "0")
+    # Check third character for write permission
+    world_perm=$(echo "$perms" | cut -c3)
+  fi
+  
+  # Check if world has write permission (2, 3, 6, or 7)
+  case "$world_perm" in
+    2|3|6|7) return 0 ;; # World-writable
+    *) return 1 ;;       # Not world-writable
+  esac
+}
+
 # Source platform configuration if available
 find_platform_config() {
   if [ -f "$(dirname "$0")/../lib/termgpt-platform.sh" ]; then
@@ -42,7 +64,7 @@ find_platform_config() {
 PLATFORM_CONFIG=$(find_platform_config)
 if [ -n "$PLATFORM_CONFIG" ] && [ -r "$PLATFORM_CONFIG" ] && [ -f "$PLATFORM_CONFIG" ]; then
   # Basic safety check - ensure file is not world-writable
-  if [ ! -w "$PLATFORM_CONFIG" ] || [ "$(stat -c %a "$PLATFORM_CONFIG" 2>/dev/null | cut -c3)" != "2" ] 2>/dev/null; then
+  if ! is_world_writable "$PLATFORM_CONFIG"; then
     . "$PLATFORM_CONFIG"
   else
     echo "Warning: Platform config file $PLATFORM_CONFIG is world-writable, skipping"
@@ -169,7 +191,7 @@ if [ -z "$CHECK_SCRIPT" ] || [ ! -r "$CHECK_SCRIPT" ] || [ ! -f "$CHECK_SCRIPT" 
 fi
 
 # Basic safety check - ensure file is not world-writable
-if [ -w "$CHECK_SCRIPT" ] && [ "$(stat -c %a "$CHECK_SCRIPT" 2>/dev/null | cut -c3)" = "2" ] 2>/dev/null; then
+if is_world_writable "$CHECK_SCRIPT"; then
   echo "Error: Check script $CHECK_SCRIPT is world-writable, refusing to source"
   exit 1
 fi
@@ -268,8 +290,20 @@ while true; do
         exit 1
       fi
       
+      # Validate command length before encoding (explainshell has limits)
+      if [ ${#COMMAND} -gt 1000 ]; then
+        echo "Error: Command too long for explainshell (max 1000 characters)"
+        exit 1
+      fi
+      
       ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$COMMAND")
       URL="https://explainshell.com/explain?cmd=$ENCODED"
+      
+      # Validate URL length (most browsers limit to ~2000 chars)
+      if [ ${#URL} -gt 2000 ]; then
+        echo "Error: Generated URL too long (max 2000 characters)"
+        exit 1
+      fi
       
       OPEN_CMD=""
       if command -v get_open_url_cmd >/dev/null 2>&1; then
