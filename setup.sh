@@ -85,16 +85,16 @@ recommend_model() {
   
   case "$gpu_type" in
     nvidia|amd|apple_silicon)
-      info "GPU detected: $gpu_type"
-      info "Recommended model: $DEFAULT_MODEL (full precision for best quality)"
+      info "GPU detected: $gpu_type" >&2
+      info "Recommended model: $DEFAULT_MODEL (full precision for best quality)" >&2
       echo "$DEFAULT_MODEL"
       ;;
     *)
-      info "No GPU detected - CPU only"
-      warn "Note: Quantized models may produce incorrect results for complex commands"
-      info "Recommended model: $DEFAULT_MODEL (full precision for safety)"
-      info "For faster performance (with quality trade-off), you can use:"
-      info "  TERMGPT_MODEL=$FAST_MODEL ./setup.sh"
+      info "No GPU detected - CPU only" >&2
+      warn "Note: Quantized models may produce incorrect results for complex commands" >&2
+      info "Recommended model: $DEFAULT_MODEL (full precision for safety)" >&2
+      info "For faster performance (with quality trade-off), you can use:" >&2
+      info "  TERMGPT_MODEL=$FAST_MODEL ./setup.sh" >&2
       echo "$DEFAULT_MODEL"
       ;;
   esac
