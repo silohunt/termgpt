@@ -119,7 +119,6 @@ Complete removal with dependency tracking:
 
 - Full documentation: `doc/README.md`
 - Manual page: `man termgpt` (after installation)
-- Development guide: `CLAUDE.md`
 
 ## License
 
