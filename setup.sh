@@ -91,8 +91,11 @@ recommend_model() {
       ;;
     *)
       info "No GPU detected - CPU only"
-      info "Recommended model: $FAST_MODEL (quantized for faster performance)"
-      echo "$FAST_MODEL"
+      warn "Note: Quantized models may produce incorrect results for complex commands"
+      info "Recommended model: $DEFAULT_MODEL (full precision for safety)"
+      info "For faster performance (with quality trade-off), you can use:"
+      info "  TERMGPT_MODEL=$FAST_MODEL ./setup.sh"
+      echo "$DEFAULT_MODEL"
       ;;
   esac
 }
