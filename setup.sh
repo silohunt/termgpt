@@ -16,6 +16,38 @@ DEFAULT_MODEL="codellama:7b-instruct"
 FAST_MODEL="codellama:7b-instruct-q4_0"
 OLLAMA_API="http://localhost:11434/api/tags"
 
+# Colors for output (if terminal supports it)
+if [ -t 1 ]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[0;33m'
+  BLUE='\033[0;34m'
+  NC='\033[0m' # No Color
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  NC=''
+fi
+
+# Helper functions
+info() {
+  printf "${BLUE}[INFO]${NC} %s\n" "$1"
+}
+
+success() {
+  printf "${GREEN}[OK]${NC} %s\n" "$1"
+}
+
+warn() {
+  printf "${YELLOW}[!]${NC} %s\n" "$1"
+}
+
+error() {
+  printf "${RED}[ERROR]${NC} %s\n" "$1"
+}
+
 # Detect GPU availability
 detect_gpu() {
   # Check for NVIDIA GPU
@@ -72,38 +104,6 @@ if [ -n "${TERMGPT_MODEL:-}" ]; then
 else
   MODEL=$(recommend_model)
 fi
-
-# Colors for output (if terminal supports it)
-if [ -t 1 ]; then
-  RED='\033[0;31m'
-  GREEN='\033[0;32m'
-  YELLOW='\033[0;33m'
-  BLUE='\033[0;34m'
-  NC='\033[0m' # No Color
-else
-  RED=''
-  GREEN=''
-  YELLOW=''
-  BLUE=''
-  NC=''
-fi
-
-# Helper functions
-info() {
-  printf "${BLUE}[INFO]${NC} %s\n" "$1"
-}
-
-success() {
-  printf "${GREEN}[OK]${NC} %s\n" "$1"
-}
-
-warn() {
-  printf "${YELLOW}[!]${NC} %s\n" "$1"
-}
-
-error() {
-  printf "${RED}[ERROR]${NC} %s\n" "$1"
-}
 
 check_command() {
   if command -v "$1" >/dev/null 2>&1; then
