@@ -14,7 +14,7 @@ set -eu
 # Configuration
 DEFAULT_MODEL="codellama:7b-instruct"
 FAST_MODEL="codellama:7b-instruct-q4_0"
-SMALL_MODEL="codellama:3b-instruct"
+SMALL_MODEL="stable-code:3b"
 OLLAMA_API="http://localhost:11434/api/tags"
 
 # Colors for output (if terminal supports it)
@@ -113,7 +113,7 @@ recommend_model() {
   if [ "$os" = "wsl" ] && [ "$gpu_type" = "none" ]; then
     warn "WSL detected without GPU passthrough" >&2
     info "WSL performance can be significantly slower than native Linux" >&2
-    info "Recommended model: $SMALL_MODEL (3B model for better WSL performance)" >&2
+    info "Recommended model: $SMALL_MODEL (small code model for better WSL performance)" >&2
     info "For best quality (slower): TERMGPT_MODEL=$DEFAULT_MODEL ./setup.sh" >&2
     echo "$SMALL_MODEL"
     return
@@ -129,8 +129,9 @@ recommend_model() {
       info "No GPU detected - CPU only" >&2
       warn "Note: Quantized models may produce incorrect results for complex commands" >&2
       info "Recommended model: $DEFAULT_MODEL (full precision for safety)" >&2
-      info "For faster performance (with quality trade-off), you can use:" >&2
-      info "  TERMGPT_MODEL=$FAST_MODEL ./setup.sh" >&2
+      info "For faster performance, you can use:" >&2
+      info "  TERMGPT_MODEL=$FAST_MODEL ./setup.sh  (quantized)" >&2
+      info "  TERMGPT_MODEL=$SMALL_MODEL ./setup.sh  (small model)" >&2
       echo "$DEFAULT_MODEL"
       ;;
   esac
@@ -270,6 +271,8 @@ download_model() {
   info "Downloading model '$MODEL'"
   if [ "$MODEL" = "$FAST_MODEL" ]; then
     info "Quantized model (~2GB, optimized for CPU performance)"
+  elif [ "$MODEL" = "$SMALL_MODEL" ]; then
+    info "Small code model (~2GB, optimized for speed)"
   else
     info "Full precision model (~4GB, best quality)"
   fi
