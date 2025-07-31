@@ -15,7 +15,7 @@ A platform-aware, POSIX-compliant shell tool that converts natural language to U
 
 ```bash
 # Clone and setup (auto-detects your platform)
-git clone https://github.com/YOUR-USERNAME/termgpt.git
+git clone https://github.com/silohunt/termgpt.git
 cd termgpt
 chmod +x setup.sh
 ./setup.sh
@@ -42,11 +42,21 @@ chmod +x setup.sh
 
 ## Installation
 
-### Automatic Setup (Recommended)
+### Quick Install from GitHub
 ```bash
+# Clone the repository
+git clone https://github.com/silohunt/termgpt.git
+cd termgpt
+
+# Run automatic setup
 ./setup.sh
 ```
-Detects your platform and installs all dependencies.
+
+The setup script will:
+- Detect your platform (macOS/Linux)
+- Install required dependencies (jq, Ollama)
+- Download the LLM model (~4GB on first run)
+- Configure platform-specific settings
 
 ### System-wide Installation
 ```bash
@@ -54,11 +64,20 @@ sudo make install
 termgpt "your command"
 ```
 
-### User Installation
+### User Installation (No sudo required)
 ```bash
-make install-user
+# Option 1: Add to PATH
 export PATH="$PATH:$(pwd)/bin"
 termgpt "your command"
+
+# Option 2: Install to ~/bin
+mkdir -p ~/bin
+cp bin/termgpt ~/bin/
+cp bin/termgpt-history ~/bin/
+# Add ~/bin to PATH in your shell config
+
+# Option 3: Use make
+make install-user
 ```
 
 ## Requirements
@@ -68,6 +87,34 @@ termgpt "your command"
 - jq, curl (installed by setup if missing)
 - python3 (optional, for explainshell feature)
 
+## Privacy & History
+
+TermGPT logs commands locally for LLM fine-tuning (never uploaded):
+```bash
+# View history
+termgpt-history show
+
+# Export for training
+termgpt-history export training-data.jsonl
+
+# Disable logging
+termgpt-history disable
+
+# Clear all history
+termgpt-history clear
+```
+
+## Uninstalling
+
+Complete removal with dependency tracking:
+```bash
+# Dry run (see what would be removed)
+./uninstall.sh --dry-run
+
+# Full uninstall
+./uninstall.sh
+```
+
 ## Documentation
 
 - Full documentation: `doc/README.md`
@@ -76,4 +123,4 @@ termgpt "your command"
 
 ## License
 
-This is free software. See LICENSE for details.
+MIT License - see LICENSE file for details.
