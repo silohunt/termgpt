@@ -14,6 +14,7 @@ set -eu
 # Configuration
 DEFAULT_MODEL="codellama:7b-instruct"
 FAST_MODEL="codellama:7b-instruct-q4_0"
+SMALL_MODEL="codellama:3b-instruct"
 OLLAMA_API="http://localhost:11434/api/tags"
 
 # Colors for output (if terminal supports it)
@@ -82,6 +83,17 @@ detect_gpu() {
 # Recommend model based on hardware
 recommend_model() {
   gpu_type=$(detect_gpu)
+  os=$(detect_os)
+  
+  # Check for WSL without GPU
+  if [ "$os" = "wsl" ] && [ "$gpu_type" = "none" ]; then
+    warn "WSL detected without GPU passthrough" >&2
+    info "WSL performance can be significantly slower than native Linux" >&2
+    info "Recommended model: $SMALL_MODEL (3B model for better WSL performance)" >&2
+    info "For best quality (slower): TERMGPT_MODEL=$DEFAULT_MODEL ./setup.sh" >&2
+    echo "$SMALL_MODEL"
+    return
+  fi
   
   case "$gpu_type" in
     nvidia|amd|apple_silicon)
@@ -121,7 +133,14 @@ check_command() {
 detect_os() {
   case "$(uname -s)" in
     Darwin*) echo "macos" ;;
-    Linux*) echo "linux" ;;
+    Linux*) 
+      # Check if running in WSL
+      if grep -q "microsoft" /proc/version 2>/dev/null; then
+        echo "wsl"
+      else
+        echo "linux"
+      fi
+      ;;
     *) echo "unknown" ;;
   esac
 }
@@ -488,6 +507,19 @@ main() {
       info "  - Clipboard integration with pbcopy"
       info "  - URL opening with 'open' command"
       info "  - Commands will be optimized for macOS"
+      ;;
+    wsl)
+      warn "Windows Subsystem for Linux (WSL) detected"
+      info "Note: Performance may be slower than native Linux"
+      if [ "$(detect_gpu)" = "none" ]; then
+        info "GPU passthrough not detected - consider using smaller models for better performance"
+      fi
+      info "Platform-specific features for WSL/Linux:"
+      if command -v xclip >/dev/null 2>&1 || command -v xsel >/dev/null 2>&1; then
+        info "  - Clipboard integration detected"
+      else
+        warn "  - No clipboard integration (install xclip for clipboard support)"
+      fi
       ;;
     linux)
       info "Platform-specific features for Linux:"
