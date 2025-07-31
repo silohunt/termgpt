@@ -49,6 +49,30 @@ error() {
   printf "${RED}[ERROR]${NC} %s\n" "$1"
 }
 
+# OS and architecture detection
+detect_os() {
+  case "$(uname -s)" in
+    Darwin*) echo "macos" ;;
+    Linux*) 
+      # Check if running in WSL
+      if grep -q "microsoft" /proc/version 2>/dev/null; then
+        echo "wsl"
+      else
+        echo "linux"
+      fi
+      ;;
+    *) echo "unknown" ;;
+  esac
+}
+
+detect_arch() {
+  case "$(uname -m)" in
+    x86_64|amd64) echo "amd64" ;;
+    aarch64|arm64) echo "arm64" ;;
+    *) echo "unknown" ;;
+  esac
+}
+
 # Detect GPU availability
 detect_gpu() {
   # Check for NVIDIA GPU
@@ -128,29 +152,6 @@ check_command() {
     error "$1 is not installed"
     return 1
   fi
-}
-
-detect_os() {
-  case "$(uname -s)" in
-    Darwin*) echo "macos" ;;
-    Linux*) 
-      # Check if running in WSL
-      if grep -q "microsoft" /proc/version 2>/dev/null; then
-        echo "wsl"
-      else
-        echo "linux"
-      fi
-      ;;
-    *) echo "unknown" ;;
-  esac
-}
-
-detect_arch() {
-  case "$(uname -m)" in
-    x86_64|amd64) echo "amd64" ;;
-    aarch64|arm64) echo "arm64" ;;
-    *) echo "unknown" ;;
-  esac
 }
 
 install_jq() {
