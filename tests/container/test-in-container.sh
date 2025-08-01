@@ -25,8 +25,14 @@ echo "✓ All scripts are POSIX compliant"
 echo
 
 echo "4. Running unit tests..."
-cd tests && ./termgpt-test.sh
-cd ..
+if [ -f tests/unit/safety-rules.sh ]; then
+  cd tests/unit && ./safety-rules.sh
+  cd ../..
+elif [ -f tests/termgpt-test.sh ]; then
+  # Fallback for old structure
+  cd tests && ./termgpt-test.sh
+  cd ..
+fi
 echo
 
 echo "5. Testing basic functionality..."
