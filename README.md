@@ -6,6 +6,7 @@ A platform-aware, POSIX-compliant shell tool that converts natural language to U
 
 - **Multiple Model Support**: Choose from CodeLlama, Qwen2.5 Coder, Stable Code, and more
 - **Platform-Aware**: Optimized for macOS, Linux, and WSL with automatic detection
+- **Smart Post-Processing**: Automatically fixes common LLM mistakes and platform issues
 - **Local LLM Inference**: Complete privacy - no cloud dependencies
 - **Advanced Safety System**: 100+ patterns detect dangerous commands (and growing)
 - **Hardware Optimization**: GPU detection for smart model recommendations
@@ -159,8 +160,36 @@ termgpt
 ### Advanced Features
 - **Safety Detection**: Automatically warns about dangerous commands
 - **Platform Optimization**: Commands optimized for your OS (macOS/Linux/WSL)
+- **Smart Corrections**: Fixes common mistakes like time semantics and missing file filters
 - **Multiple Models**: Switch between different coding models
 - **History Tracking**: Local logging for training data (optional)
+
+## How It Works
+
+TermGPT uses a multi-layer approach to generate reliable commands:
+
+1. **LLM Generation**: Local model converts natural language to shell commands
+2. **Smart Post-Processing**: Automatically fixes common issues:
+   - Platform compatibility (macOS netstat flags, case sensitivity)
+   - Time semantics (`-mtime +7` → `-mtime -7` for "last week")
+   - File filtering (adds `*.log` for log compression commands)
+   - Command optimization (better default paths)
+3. **Safety Validation**: 100+ patterns detect dangerous operations
+4. **User Review**: Interactive confirmation before execution
+
+### Example Improvements
+
+**Input**: `"compress all log files from last week"`
+
+**Before Post-Processing**:
+```bash
+find . -type f -mtime +7 -exec gzip {} \;  # Wrong: finds files older than 7 days
+```
+
+**After Post-Processing**:
+```bash
+find /var/log -name "*.log" -type f -mtime -7 -exec gzip {} \;  # Correct: recent log files
+```
 
 ## Documentation
 

@@ -92,6 +92,43 @@ For advanced users or custom environments:
 
 ## Usage
 
+TermGPT converts natural language descriptions into shell commands using a local LLM with intelligent post-processing for reliability and safety.
+
+### Command Processing Pipeline
+
+TermGPT uses a sophisticated multi-stage pipeline to ensure reliable command generation:
+
+#### 1. Natural Language Processing
+The local LLM model analyzes your request and generates an initial shell command.
+
+#### 2. Smart Post-Processing
+Commands are automatically improved through platform-aware corrections:
+
+**Platform Compatibility Fixes**:
+- macOS: Removes unsupported `netstat -p` flags → uses `netstat -an` or `lsof`
+- macOS: Fixes case sensitivity (`grep UDP` → `grep -i udp`)
+- Linux: Preserves GNU-specific options
+
+**Semantic Corrections**:
+- Time logic: `"from last week"` uses `-mtime -7` (not `+7`)
+- File filtering: Log operations get `*.log` filters automatically
+- Path optimization: Uses meaningful defaults (`/var/log` vs `.`)
+
+**Security Hardening**:
+- Prevents shell injection in post-processing
+- Uses `printf` instead of `echo` for safety
+- Fail-safe error handling
+
+#### 3. Safety Validation
+- 100+ regex patterns detect dangerous operations
+- Multi-level warnings (CRITICAL, HIGH, MEDIUM, LOW)
+- User confirmation required for risky commands
+
+#### 4. Interactive Review
+- View generated command before execution
+- Copy to clipboard or explain on explainshell.com
+- Optional history logging for improvement
+
 ### Basic Usage
 
 ```bash
@@ -104,6 +141,39 @@ termgpt "list all python files"
 termgpt "find files larger than 100MB"
 termgpt "create a tar archive of the docs folder"
 termgpt "copy all log files to the backup directory"
+```
+
+### Post-Processing Examples
+
+See how TermGPT automatically improves generated commands:
+
+#### Time-Based Commands
+```bash
+# Input: "compress all log files from last week"
+# Raw LLM:    find . -type f -mtime +7 -exec gzip {} \;
+# Corrected:  find /var/log -name "*.log" -type f -mtime -7 -exec gzip {} \;
+
+# Input: "show files modified in the last 3 days"  
+# Raw LLM:    find . -mtime +3
+# Corrected:  find . -mtime -3
+```
+
+#### Platform-Specific Fixes
+```bash
+# Input: "list UDP connections" (on macOS)
+# Raw LLM:    netstat -anp | grep UDP
+# Corrected:  netstat -an | grep -i udp
+
+# Input: "show processes using port 80" (on macOS)
+# Raw LLM:    netstat -tulnp | grep :80
+# Corrected:  lsof -i :80
+```
+
+#### File Type Intelligence
+```bash
+# Input: "compress log artifacts"
+# Raw LLM:    find . -type f -exec gzip {} \;
+# Corrected:  find . -name "*.log" -type f -exec gzip {} \;
 ```
 
 ### Interactive Menu

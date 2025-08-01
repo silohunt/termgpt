@@ -69,8 +69,10 @@ termgpt "check disk space"
 - Single, focused commands (no compound `&&` chains)
 - No unwanted clipboard operations unless requested
 - No URL opening unless requested
-- Platform-appropriate flags and syntax
+- Platform-appropriate flags and syntax (post-processing fixes common issues)
 - Commands work without modification
+- Time semantics correct (`-mtime -7` for "last week", not `+7`)
+- Appropriate file filters for specific operations (`*.log` for log compression)
 
 ### Red Flags ❌
 - Commands with `netstat -p` on macOS
