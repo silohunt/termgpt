@@ -4,7 +4,7 @@ A platform-aware, POSIX-compliant shell tool that converts natural language to U
 
 ## Features
 
-- **Multiple Model Support**: Choose from DeepSeek Coder, Qwen2.5 Coder, CodeLlama, and more
+- **Multiple Model Support**: Choose from CodeLlama, Qwen2.5 Coder, Stable Code, and more
 - **Platform-Aware**: Optimized for macOS, Linux, and WSL with automatic detection
 - **Local LLM Inference**: Complete privacy - no cloud dependencies
 - **Advanced Safety System**: 100+ patterns detect dangerous commands (and growing)
