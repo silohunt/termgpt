@@ -11,18 +11,10 @@
 
 set -eu
 
-# Available Models Configuration
-MODEL_CODELLAMA_7B="codellama:7b-instruct"
-MODEL_DEEPSEEK_V2="deepseek-coder-v2:16b" 
-MODEL_DEEPSEEK_V1="deepseek-coder:6.7b"
-MODEL_QWEN_CODER="qwen2.5-coder:7b"
-MODEL_STABLE_CODE="stable-code:3b"
-MODEL_FAST_QUANT="codellama:7b-instruct-q4_0"
-
-# Default fallbacks (will be overridden by interactive selection)
-DEFAULT_MODEL="$MODEL_DEEPSEEK_V2"
-FAST_MODEL="$MODEL_FAST_QUANT"
-SMALL_MODEL="$MODEL_STABLE_CODE"
+# Configuration
+DEFAULT_MODEL="codellama:7b-instruct"
+FAST_MODEL="codellama:7b-instruct-q4_0"
+SMALL_MODEL="stable-code:3b"
 OLLAMA_API="http://localhost:11434/api/tags"
 
 # Colors for output (if terminal supports it)
@@ -112,112 +104,45 @@ detect_gpu() {
   echo "none"
 }
 
-# Interactive model selection
-select_model_interactive() {
+# Recommend model based on hardware
+recommend_model() {
   gpu_type=$(detect_gpu)
   os=$(detect_os)
   
-  echo
-  info "🤖 Model Selection for TermGPT"
-  echo
-  
-  # Show system info
-  if [ "$gpu_type" != "none" ]; then
-    success "GPU detected: $gpu_type"
-  else
-    warn "No GPU detected - CPU only"
-  fi
-  
-  if [ "$os" = "wsl" ]; then
-    warn "WSL detected - performance may be slower"
-  fi
-  
-  echo
-  info "Available models:"
-  echo
-  printf "  ${BLUE}1)${NC} DeepSeek Coder V2 16B     ${GREEN}[RECOMMENDED]${NC}\n"
-  printf "     • Best performance, MoE architecture (2.4B active params)\n"
-  printf "     • 338 programming languages, 128K context\n"
-  printf "     • ~8GB RAM required\n\n"
-  
-  printf "  ${BLUE}2)${NC} Qwen2.5 Coder 7B          ${GREEN}[FAST & ACCURATE]${NC}\n"
-  printf "     • Excellent performance vs memory ratio\n"
-  printf "     • Beats GPT-4o on many benchmarks\n"
-  printf "     • ~6GB RAM required\n\n"
-  
-  printf "  ${BLUE}3)${NC} DeepSeek Coder V1 6.7B     ${YELLOW}[PROVEN]${NC}\n"
-  printf "     • Well-tested, reliable performance\n"
-  printf "     • Better than CodeLlama 34B\n"
-  printf "     • ~7GB RAM required\n\n"
-  
-  printf "  ${BLUE}4)${NC} CodeLlama 7B               ${YELLOW}[STABLE]${NC}\n"
-  printf "     • Original TermGPT default\n"
-  printf "     • Most compatible\n"
-  printf "     • ~4GB RAM required\n\n"
-  
-  printf "  ${BLUE}5)${NC} Stable Code 3B             ${GREEN}[LIGHTWEIGHT]${NC}\n"
-  printf "     • Best for WSL/low-memory systems\n"
-  printf "     • Code-specialized model\n"
-  printf "     • ~2GB RAM required\n\n"
-  
-  # Smart defaults based on system
+  # Check for WSL without GPU
   if [ "$os" = "wsl" ] && [ "$gpu_type" = "none" ]; then
-    default_choice="5"
-    info "Recommended for your WSL system: Option 5 (Stable Code 3B)"
-  elif [ "$gpu_type" != "none" ]; then
-    default_choice="1"
-    info "Recommended for your GPU system: Option 1 (DeepSeek V2)"
-  else
-    default_choice="2"
-    info "Recommended for your CPU system: Option 2 (Qwen2.5 Coder)"
+    warn "WSL detected without GPU passthrough" >&2
+    info "WSL performance can be significantly slower than native Linux" >&2
+    info "Recommended model: $SMALL_MODEL (small code model for better WSL performance)" >&2
+    info "For best quality (slower): TERMGPT_MODEL=$DEFAULT_MODEL ./setup.sh" >&2
+    echo "$SMALL_MODEL"
+    return
   fi
   
-  echo
-  printf "Choose model [1-5] (default: $default_choice): "
-  read -r choice
-  
-  # Use default if empty
-  if [ -z "$choice" ]; then
-    choice="$default_choice"
-  fi
-  
-  case "$choice" in
-    1) echo "$MODEL_DEEPSEEK_V2" ;;
-    2) echo "$MODEL_QWEN_CODER" ;;
-    3) echo "$MODEL_DEEPSEEK_V1" ;;
-    4) echo "$MODEL_CODELLAMA_7B" ;;
-    5) echo "$MODEL_STABLE_CODE" ;;
-    *) 
-      warn "Invalid choice, using recommended default"
-      case "$default_choice" in
-        1) echo "$MODEL_DEEPSEEK_V2" ;;
-        2) echo "$MODEL_QWEN_CODER" ;;
-        5) echo "$MODEL_STABLE_CODE" ;;
-      esac
+  case "$gpu_type" in
+    nvidia|amd|apple_silicon)
+      info "GPU detected: $gpu_type" >&2
+      info "Recommended model: $DEFAULT_MODEL (full precision for best quality)" >&2
+      echo "$DEFAULT_MODEL"
+      ;;
+    *)
+      info "No GPU detected - CPU only" >&2
+      warn "Note: Quantized models may produce incorrect results for complex commands" >&2
+      info "Recommended model: $DEFAULT_MODEL (full precision for safety)" >&2
+      info "For faster performance, you can use:" >&2
+      info "  TERMGPT_MODEL=$FAST_MODEL ./setup.sh  (quantized)" >&2
+      info "  TERMGPT_MODEL=$SMALL_MODEL ./setup.sh  (small model)" >&2
+      echo "$DEFAULT_MODEL"
       ;;
   esac
 }
 
-# Model selection logic
+# Allow override via environment variable
 if [ -n "${TERMGPT_MODEL:-}" ]; then
   MODEL="$TERMGPT_MODEL"
   info "Using model from TERMGPT_MODEL environment variable: $MODEL"
-elif [ "${TERMGPT_INTERACTIVE:-true}" = "false" ]; then
-  # Non-interactive mode - use smart defaults
-  gpu_type=$(detect_gpu)
-  os=$(detect_os)
-  if [ "$os" = "wsl" ] && [ "$gpu_type" = "none" ]; then
-    MODEL="$MODEL_STABLE_CODE"
-  elif [ "$gpu_type" != "none" ]; then
-    MODEL="$MODEL_DEEPSEEK_V2"
-  else
-    MODEL="$MODEL_QWEN_CODER"
-  fi
-  info "Auto-selected model for your system: $MODEL"
 else
-  # Interactive selection
-  MODEL=$(select_model_interactive)
-  success "Selected model: $MODEL"
+  MODEL=$(recommend_model)
 fi
 
 check_command() {
@@ -344,29 +269,13 @@ download_model() {
   fi
   
   info "Downloading model '$MODEL'"
-  case "$MODEL" in
-    "$MODEL_DEEPSEEK_V2")
-      info "DeepSeek Coder V2 16B (~8GB, MoE architecture with 2.4B active params)"
-      ;;
-    "$MODEL_QWEN_CODER")
-      info "Qwen2.5 Coder 7B (~6GB, excellent performance/memory ratio)"
-      ;;
-    "$MODEL_DEEPSEEK_V1")
-      info "DeepSeek Coder V1 6.7B (~7GB, proven reliable performance)"
-      ;;
-    "$MODEL_CODELLAMA_7B")
-      info "CodeLlama 7B (~4GB, stable and compatible)"
-      ;;
-    "$MODEL_STABLE_CODE")
-      info "Stable Code 3B (~2GB, lightweight and fast)"
-      ;;
-    "$MODEL_FAST_QUANT")
-      info "CodeLlama Quantized (~2GB, optimized for CPU)"
-      ;;
-    *)
-      info "Selected model (size varies by model)"
-      ;;
-  esac
+  if [ "$MODEL" = "$FAST_MODEL" ]; then
+    info "Quantized model (~2GB, optimized for CPU performance)"
+  elif [ "$MODEL" = "$SMALL_MODEL" ]; then
+    info "Small code model (~2GB, optimized for speed)"
+  else
+    info "Full precision model (~4GB, best quality)"
+  fi
   info "This may take several minutes..."
   
   if ollama pull "$MODEL"; then
