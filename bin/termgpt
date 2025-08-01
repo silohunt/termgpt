@@ -144,7 +144,10 @@ if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
 fi
 
 PROMPT="You are a shell command generator. Convert each natural language request into a single POSIX-compliant shell command.
-${PLATFORM_CONTEXT}Only output the command with no extra text, explanations, markdown, or code fences.
+${PLATFORM_CONTEXT}CRITICAL: Only output the raw command. No explanations, no markdown, no code blocks, no extra text.
+DO NOT start with phrases like 'Here is the command:' or 'The command is:'.
+Just output the bare shell command and nothing else.
+
 Request: $USER_PROMPT"
 
 WORD_COUNT=$(echo "$PROMPT" | wc -w)
