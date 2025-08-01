@@ -155,21 +155,22 @@ apply_platform_corrections() {
   case "$platform" in
     macos)
       # Fix common macOS issues
+      # Use printf for safety - prevents command injection
       # Remove unsupported netstat -p flag
-      command=$(echo "$command" | sed 's/netstat -[a-zA-Z]*p[a-zA-Z]*/netstat -an/g')
+      command=$(printf '%s\n' "$command" | sed 's/netstat -[a-zA-Z]*p[a-zA-Z]*/netstat -an/g')
       # Fix UDP case sensitivity (macOS outputs lowercase)
-      command=$(echo "$command" | sed 's/grep [^|]*UDP[^|]*/grep -i udp/g')
-      command=$(echo "$command" | sed 's/grep "UDP"/grep -i "udp"/g')
-      command=$(echo "$command" | sed 's/grep '\''UDP'\''/grep -i '\''udp'\''/g')
+      command=$(printf '%s\n' "$command" | sed 's/grep [^|]*UDP[^|]*/grep -i udp/g')
+      command=$(printf '%s\n' "$command" | sed 's/grep "UDP"/grep -i "udp"/g')
+      command=$(printf '%s\n' "$command" | sed 's/grep '\''UDP'\''/grep -i '\''udp'\''/g')
       # Use lsof instead of netstat -p combinations
-      command=$(echo "$command" | sed 's/netstat.*-p.*|.*grep/lsof -i/g')
+      command=$(printf '%s\n' "$command" | sed 's/netstat.*-p.*|.*grep/lsof -i/g')
       ;;
     linux)
       # Linux-specific corrections could go here
       ;;
   esac
   
-  echo "$command"
+  printf '%s' "$command"
 }
 
 # Build minimal platform context
