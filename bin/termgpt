@@ -29,9 +29,8 @@ if [ "$#" -eq 1 ] && { [ "$1" = "--version" ] || [ "$1" = "-V" ]; }; then
   exit 0
 fi
 
-# Default model, can be overridden by environment or config
+# Default model
 DEFAULT_MODEL="codellama:7b-instruct"
-MODEL="${TERMGPT_MODEL:-$DEFAULT_MODEL}"
 API_URL="http://localhost:11434/api/generate"
 
 # Cross-platform function to check if a file is world-writable
@@ -81,6 +80,18 @@ if [ -n "$PLATFORM_CONFIG" ] && [ -r "$PLATFORM_CONFIG" ] && [ -f "$PLATFORM_CON
   fi
 fi
 
+# Set model after config is loaded (environment takes precedence)
+MODEL="${TERMGPT_MODEL:-$DEFAULT_MODEL}"
+
+# Handle model info flag (after config is loaded)
+if [ "$#" -eq 1 ] && { [ "$1" = "--model" ] || [ "$1" = "-m" ]; }; then
+  echo "Current model: $MODEL"
+  if [ -f "$HOME/.config/termgpt/platform.conf" ]; then
+    echo "Config: $HOME/.config/termgpt/platform.conf"
+  fi
+  exit 0
+fi
+
 # Quick dependency check
 if ! command -v jq >/dev/null 2>&1; then
   echo "Error: jq is not installed"
@@ -97,6 +108,8 @@ fi
 USER_PROMPT="$*"
 if [ -z "$USER_PROMPT" ]; then
   echo "Usage: termgpt <natural language request>"
+  echo "       termgpt --version | -V    Show version"
+  echo "       termgpt --model | -m      Show current model"
   exit 1
 fi
 
