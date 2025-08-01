@@ -60,15 +60,14 @@ is_world_writable() {
 
 # Source platform configuration if available
 find_platform_config() {
-  # User config takes precedence
-  if [ -f "$HOME/.config/termgpt/platform.conf" ]; then
-    echo "$HOME/.config/termgpt/platform.conf"
-  elif [ -f "$(dirname "$0")/../lib/termgpt-platform.sh" ]; then
+  if [ -f "$(dirname "$0")/../lib/termgpt-platform.sh" ]; then
     echo "$(dirname "$0")/../lib/termgpt-platform.sh"
   elif [ -f "/usr/local/lib/termgpt/termgpt-platform.sh" ]; then
     echo "/usr/local/lib/termgpt/termgpt-platform.sh"
   elif [ -f "/usr/lib/termgpt/termgpt-platform.sh" ]; then
     echo "/usr/lib/termgpt/termgpt-platform.sh"
+  elif [ -f "$HOME/.config/termgpt/platform.conf" ]; then
+    echo "$HOME/.config/termgpt/platform.conf"
   else
     return 1
   fi
@@ -95,7 +94,6 @@ else
   # Use default
   MODEL="$DEFAULT_MODEL"
 fi
-
 
 # Handle model info flag (after config is loaded)
 if [ "$#" -eq 1 ] && { [ "$1" = "--model" ] || [ "$1" = "-m" ]; }; then
