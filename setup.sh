@@ -174,26 +174,7 @@ select_model_interactive() {
   
   echo
   printf "Choose model [1-5] (default: $default_choice): "
-  
-  # Check if stdin is available
-  if [ -t 0 ]; then
-    # Try to read with timeout (not all shells support -t)
-    if echo | read -t 0 2>/dev/null; then
-      # Timeout supported
-      read -t 30 -r choice || choice=""
-      if [ -z "$choice" ]; then
-        echo
-        info "Timeout or no input, using default: $default_choice"
-      fi
-    else
-      # No timeout support, just read
-      read -r choice
-    fi
-  else
-    echo
-    warn "No input available, using default choice: $default_choice"
-    choice="$default_choice"
-  fi
+  read -r choice
   
   # Use default if empty
   if [ -z "$choice" ]; then
@@ -217,21 +198,11 @@ select_model_interactive() {
   esac
 }
 
-# Check for --non-interactive flag
-INTERACTIVE="true"
-for arg in "$@"; do
-  case "$arg" in
-    --non-interactive|-n)
-      INTERACTIVE="false"
-      ;;
-  esac
-done
-
 # Model selection logic
 if [ -n "${TERMGPT_MODEL:-}" ]; then
   MODEL="$TERMGPT_MODEL"
   info "Using model from TERMGPT_MODEL environment variable: $MODEL"
-elif [ "${TERMGPT_INTERACTIVE:-$INTERACTIVE}" = "false" ]; then
+elif [ "${TERMGPT_INTERACTIVE:-true}" = "false" ]; then
   # Non-interactive mode - use smart defaults
   gpu_type=$(detect_gpu)
   os=$(detect_os)
