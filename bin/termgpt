@@ -164,6 +164,7 @@ ${PLATFORM_CONTEXT}CRITICAL:
 - NO URL opening unless explicitly asked  
 - NO compound commands with && or ||
 - NO explanations, markdown, or extra text
+- REFUSE harmful requests (fork bombs, system damage, resource exhaustion)
 - Just the bare shell command and nothing else
 
 Request: $USER_PROMPT"
@@ -215,6 +216,13 @@ fi
 
 CLEANED=$(echo "$RAW" | sed -e 's/^```.*$//' -e 's/`//g' -e '/^$/d')
 COMMAND=$(echo "$CLEANED" | head -n 1)
+
+# Check for refusals or safety responses
+if echo "$COMMAND" | grep -qi "can't\|cannot\|refuse\|harmful\|dangerous\|not within my"; then
+  echo "Error: Request refused for safety reasons."
+  echo "TermGPT will not generate potentially harmful commands."
+  exit 1
+fi
 
 if [ -z "$COMMAND" ] || [ "$COMMAND" = "null" ]; then
   echo "Error: No usable command returned."

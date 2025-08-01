@@ -45,6 +45,8 @@
 [CRITICAL] rm[[:space:]]+-rf[[:space:]]+/var/lib/dpkg/info/\*\.list
 [CRITICAL] cat[[:space:]]+>[[:space:]]+/etc/(passwd|shadow|group|sudoers).*<<
 [CRITICAL] ^:\(\)[[:space:]]*\{[[:space:]]*:|:[[:space:]]*&[[:space:]]*\};[[:space:]]*:$  # Classic fork bomb
+[CRITICAL] yes.*\|.*head.*-n.*[0-9]{6,}  # Resource exhaustion via yes/head with large numbers
+[CRITICAL] yes.*\|.*tee.*\|.*cat  # Resource exhaustion via yes/tee/cat pipes
 [CRITICAL] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+rm[[:space:]]+-[rf]+[[:space:]]+/.*;[[:space:]]+done$
 [CRITICAL] ^yes[[:space:]]*\|[[:space:]]*while[[:space:]]+read.*\|[[:space:]]*while[[:space:]]+read
 [CRITICAL] ^yes[[:space:]]*\|[[:space:]]*bash[[:space:]]+-c[[:space:]]+['"]exec[[:space:]]+bash.*\$0.*['"][[:space:]]*&?$
