@@ -86,7 +86,7 @@ log_interaction() {
   escaped_action=$(json_escape "$user_action")
   
   # Create JSON entry in format suitable for fine-tuning (compact JSONL format)
-  json_entry="{\"timestamp\":\"$timestamp\",\"session_id\":\"$session_id\",\"system_context\":$system_context,\"conversation\":[{\"role\":\"user\",\"content\":\"$escaped_prompt\"},{\"role\":\"assistant\",\"content\":\"$escaped_command\"}],\"metadata\":{\"safety_level\":\"$escaped_safety\",\"user_action\":\"$escaped_action\",\"model\":\"${MODEL:-codellama:7b-instruct}\",\"version\":\"termgpt-1.0\"}}"
+  json_entry="{\"timestamp\":\"$timestamp\",\"session_id\":\"$session_id\",\"system_context\":$system_context,\"conversation\":[{\"role\":\"user\",\"content\":\"$escaped_prompt\"},{\"role\":\"assistant\",\"content\":\"$escaped_command\"}],\"metadata\":{\"safety_level\":\"$escaped_safety\",\"user_action\":\"$escaped_action\",\"model\":\"${MODEL:-codellama:7b-instruct}\",\"version\":\"termgpt-0.8\"}}"
   
   # Append to history file
   if echo "$json_entry" >> "$HISTORY_FILE" 2>/dev/null; then
