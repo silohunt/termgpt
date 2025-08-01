@@ -131,37 +131,25 @@ PLATFORM_CONTEXT=""
 if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
   case "$TERMGPT_PLATFORM" in
     macos)
-      PLATFORM_CONTEXT="Target platform: macOS. Use BSD-style commands (netstat without -p, lsof for process info). "
+      PLATFORM_CONTEXT="Platform: macOS. IMPORTANT: macOS netstat does NOT support -p flag. Use 'netstat -an' or 'lsof -i' for network info. "
       ;;
     linux)
-      PLATFORM_CONTEXT="Target platform: Linux. Use GNU-style commands (netstat with -p supported). "
-      ;;
-    wsl)
-      PLATFORM_CONTEXT="Target platform: WSL/Linux. Use GNU-style commands but optimized for WSL environment. "
+      PLATFORM_CONTEXT="Platform: Linux. "
       ;;
     *)
-      PLATFORM_CONTEXT="Target platform: $TERMGPT_PLATFORM. "
+      PLATFORM_CONTEXT="Platform: $TERMGPT_PLATFORM. "
       ;;
   esac
-  
-  if command -v get_clipboard_cmd >/dev/null 2>&1; then
-    CLIPBOARD_CMD=$(get_clipboard_cmd)
-    if [ -n "$CLIPBOARD_CMD" ]; then
-      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}Clipboard: '$CLIPBOARD_CMD' available. "
-    fi
-  fi
-  if command -v get_open_url_cmd >/dev/null 2>&1; then
-    OPEN_CMD=$(get_open_url_cmd)
-    if [ -n "$OPEN_CMD" ]; then
-      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}URL opener: '$OPEN_CMD' available. "
-    fi
-  fi
 fi
 
 PROMPT="You are a shell command generator. Convert each natural language request into a single POSIX-compliant shell command.
-${PLATFORM_CONTEXT}CRITICAL: Only output the raw command. No explanations, no markdown, no code blocks, no extra text.
-DO NOT start with phrases like 'Here is the command:' or 'The command is:'.
-Just output the bare shell command and nothing else.
+${PLATFORM_CONTEXT}CRITICAL: 
+- Only output ONE command that directly answers the request
+- NO clipboard operations (pbcopy, xclip, etc.) unless explicitly asked
+- NO URL opening unless explicitly asked  
+- NO compound commands with && or ||
+- NO explanations, markdown, or extra text
+- Just the bare shell command and nothing else
 
 Request: $USER_PROMPT"
 
