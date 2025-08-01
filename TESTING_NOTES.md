@@ -81,11 +81,80 @@ termgpt "check disk space"
 
 ## Testing Workflow
 
+### Manual Testing
 1. **Generate Command**: Run termgpt with test scenario
 2. **Check Generated Command**: Verify it looks appropriate for your platform
 3. **Test Execution**: Copy and run the command manually
 4. **Verify Results**: Ensure command works and produces expected output
 5. **Report Issues**: Note any commands that fail or produce incorrect results
+
+### Using History Feature for Systematic Testing
+
+TermGPT's history feature is perfect for comprehensive testing:
+
+**Run Test Suite**:
+```bash
+# Test common scenarios
+termgpt "list open udp connections"
+termgpt "show processes using port 80"
+termgpt "find python files larger than 1MB"
+termgpt "display memory usage"
+termgpt "check disk space"
+termgpt "show network connections"
+# ... add more test cases
+```
+
+**Review & Analyze History**:
+```bash
+# View all recent commands
+termgpt-history --recent 10
+
+# Export for analysis
+termgpt-history --export > test_results.json
+
+# Search for specific patterns
+termgpt-history --search "udp"
+termgpt-history --search "netstat"
+```
+
+**Batch Testing Benefits**:
+- **Systematic Coverage**: Run all test scenarios in sequence
+- **Pattern Analysis**: Look for consistent issues across similar commands
+- **Regression Testing**: Compare results across different model versions
+- **Platform Comparison**: Share history exports between macOS/Linux testers
+- **Success Rate Tracking**: Monitor how many commands work without issues
+
+**History-Based Bug Reports**:
+Include history exports with bug reports to show:
+- Full context of testing session
+- Which commands worked vs failed
+- Patterns in post-processing corrections
+- Model response consistency
+
+**Sample Test Script**:
+```bash
+#!/bin/bash
+# TermGPT Test Suite
+echo "Starting TermGPT testing session..."
+
+# Network commands (focus on platform differences)
+termgpt "list open udp connections"
+termgpt "show tcp connections"  
+termgpt "find process using port 22"
+termgpt "display listening ports"
+
+# File operations
+termgpt "find large files over 100MB"
+termgpt "list files modified today"
+termgpt "show directory sizes"
+
+# System info
+termgpt "check memory usage"
+termgpt "display running processes"
+termgpt "show disk usage"
+
+echo "Test complete. Review with: termgpt-history --recent 10"
+```
 
 ## Known Issues & Workarounds
 
