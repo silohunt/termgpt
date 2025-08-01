@@ -126,20 +126,35 @@ if [ -z "$USER_PROMPT" ]; then
   exit 1
 fi
 
-# Build platform context
-PLATFORM_CONTEXT=""
-if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
-  case "$TERMGPT_PLATFORM" in
+# Platform-specific command post-processing
+apply_platform_corrections() {
+  local command="$1"
+  local platform="${TERMGPT_PLATFORM:-unknown}"
+  
+  case "$platform" in
     macos)
-      PLATFORM_CONTEXT="Platform: macOS. IMPORTANT: macOS netstat does NOT support -p flag. Use 'netstat -an' or 'lsof -i' for network info. "
+      # Fix common macOS issues
+      # Remove unsupported netstat -p flag
+      command=$(echo "$command" | sed 's/netstat -[a-zA-Z]*p[a-zA-Z]*/netstat -an/g')
+      # Fix UDP case sensitivity (macOS outputs lowercase)
+      command=$(echo "$command" | sed 's/grep [^|]*UDP[^|]*/grep -i udp/g')
+      command=$(echo "$command" | sed 's/grep "UDP"/grep -i "udp"/g')
+      command=$(echo "$command" | sed 's/grep '\''UDP'\''/grep -i '\''udp'\''/g')
+      # Use lsof instead of netstat -p combinations
+      command=$(echo "$command" | sed 's/netstat.*-p.*|.*grep/lsof -i/g')
       ;;
     linux)
-      PLATFORM_CONTEXT="Platform: Linux. "
-      ;;
-    *)
-      PLATFORM_CONTEXT="Platform: $TERMGPT_PLATFORM. "
+      # Linux-specific corrections could go here
       ;;
   esac
+  
+  echo "$command"
+}
+
+# Build minimal platform context
+PLATFORM_CONTEXT=""
+if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
+  PLATFORM_CONTEXT="Platform: $TERMGPT_PLATFORM. "
 fi
 
 PROMPT="You are a shell command generator. Convert each natural language request into a single POSIX-compliant shell command.
@@ -206,6 +221,9 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" = "null" ]; then
   echo "$RAW"
   exit 1
 fi
+
+# Apply platform-specific corrections
+COMMAND=$(apply_platform_corrections "$COMMAND")
 
 # Find the check script (support multiple installation methods)
 find_check_script() {
