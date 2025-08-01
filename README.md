@@ -4,12 +4,13 @@ A platform-aware, POSIX-compliant shell tool that converts natural language to U
 
 ## Features
 
-- Platform-aware command generation (macOS/Linux optimized)
-- Local LLM inference for privacy (no cloud dependencies)
-- Built-in safety checks against dangerous commands
-- Intelligent clipboard and URL handling per platform
-- 100% POSIX shell compliant - runs anywhere
-- Interactive command review and execution
+- **Multiple Model Support**: Choose from DeepSeek Coder, Qwen2.5 Coder, CodeLlama, and more
+- **Platform-Aware**: Optimized for macOS, Linux, and WSL with automatic detection
+- **Local LLM Inference**: Complete privacy - no cloud dependencies
+- **Advanced Safety System**: 100+ patterns detect dangerous commands (and growing)
+- **Hardware Optimization**: GPU detection for smart model recommendations
+- **POSIX Compliant**: Runs on any Unix-like system
+- **Interactive Interface**: Review, copy, or explain commands before execution
 
 ## Quick Start
 
@@ -80,12 +81,35 @@ cp bin/termgpt-history ~/bin/
 make install-user
 ```
 
+## Model Options
+
+TermGPT supports multiple high-quality coding models:
+
+### Recommended Models
+1. **CodeLlama 7B Instruct** (Default) - Best instruction following, platform-aware
+2. **Qwen2.5 Coder 7B** - Good performance/memory ratio  
+3. **Stable Code 3B** - Lightweight for resource-constrained systems
+
+### Model Selection
+```bash
+# Use default model
+./setup.sh
+
+# Choose specific model
+TERMGPT_MODEL=qwen2.5-coder:7b ./setup.sh
+TERMGPT_MODEL=stable-code:3b ./setup.sh
+
+# Check current model
+termgpt --model
+```
+
 ## Requirements
 
-- Ollama (installed automatically by setup.sh)
-- codellama:7b-instruct model (downloaded automatically)
-- jq, curl (installed by setup if missing)
-- python3 (optional, for explainshell feature)
+- **Ollama** (installed automatically by setup.sh)
+- **LLM Model** (downloaded automatically based on your system)
+- **jq, curl** (installed by setup if missing)
+- **python3** (optional, for explainshell feature)
+- **4-6GB RAM** (depending on model choice)
 
 ## Privacy & History
 
@@ -115,10 +139,33 @@ Complete removal with dependency tracking:
 ./uninstall.sh
 ```
 
+## Usage
+
+### Basic Commands
+```bash
+# Generate commands from natural language
+termgpt "find all python files larger than 1MB"
+termgpt "show disk usage sorted by size" 
+termgpt "compress all log files from last week"
+
+# Check version and model
+termgpt --version
+termgpt --model
+
+# Get help
+termgpt
+```
+
+### Advanced Features
+- **Safety Detection**: Automatically warns about dangerous commands
+- **Platform Optimization**: Commands optimized for your OS (macOS/Linux/WSL)
+- **Multiple Models**: Switch between different coding models
+- **History Tracking**: Local logging for training data (optional)
+
 ## Documentation
 
-- Full documentation: `doc/README.md`
-- Manual page: `man termgpt` (after installation)
+- **Full documentation**: `doc/README.md`
+- **Manual page**: `man termgpt` (after installation)
 
 ## License
 

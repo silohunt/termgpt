@@ -40,7 +40,7 @@ TermGPT supports multiple installation methods to accommodate different use case
 The setup script automatically detects your platform and configures everything:
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/termgpt.git
+git clone https://github.com/silohunt/termgpt.git
 cd termgpt
 chmod +x setup.sh
 ./setup.sh

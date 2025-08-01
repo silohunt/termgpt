@@ -13,11 +13,10 @@ set -eu
 
 # Configuration
 # Available models (in order of recommendation):
-# - deepseek-coder-v2:16b    - Best overall (MoE, 338 langs, 128K context) ~8GB
-# - qwen2.5-coder:7b         - Great performance/memory ratio ~6GB  
-# - deepseek-coder:6.7b      - Proven reliable ~7GB
-# - codellama:7b-instruct    - Original default ~4GB
-DEFAULT_MODEL="deepseek-coder:6.7b"  # Using proven V1 for stability
+# - codellama:7b-instruct    - Best instruction following, platform-aware ~4GB
+# - qwen2.5-coder:7b         - Good performance/memory ratio ~6GB  
+# - stable-code:3b           - Lightweight for resource-constrained systems ~2GB
+DEFAULT_MODEL="codellama:7b-instruct"  # Best for following instructions
 FAST_MODEL="codellama:7b-instruct-q4_0"
 SMALL_MODEL="stable-code:3b"
 OLLAMA_API="http://localhost:11434/api/tags"
@@ -127,13 +126,13 @@ recommend_model() {
   case "$gpu_type" in
     nvidia|amd|apple_silicon)
       info "GPU detected: $gpu_type" >&2
-      info "Recommended model: $DEFAULT_MODEL (full precision for best quality)" >&2
+      info "Recommended model: $DEFAULT_MODEL (best instruction following)" >&2
       echo "$DEFAULT_MODEL"
       ;;
     *)
       info "No GPU detected - CPU only" >&2
       warn "Note: Quantized models may produce incorrect results for complex commands" >&2
-      info "Recommended model: $DEFAULT_MODEL (full precision for safety)" >&2
+      info "Recommended model: $DEFAULT_MODEL (best instruction following)" >&2
       info "For faster performance, you can use:" >&2
       info "  TERMGPT_MODEL=$FAST_MODEL ./setup.sh  (quantized)" >&2
       info "  TERMGPT_MODEL=$SMALL_MODEL ./setup.sh  (small model)" >&2
@@ -581,9 +580,8 @@ main() {
   info "Model installed: $MODEL"
   echo
   info "To use a different model, run:"
-  echo "  TERMGPT_MODEL=deepseek-coder-v2:16b ./setup.sh  # Best overall (MoE)"
-  echo "  TERMGPT_MODEL=qwen2.5-coder:7b ./setup.sh       # Fast & accurate"
-  echo "  TERMGPT_MODEL=codellama:7b-instruct ./setup.sh  # Original default"
+  echo "  TERMGPT_MODEL=qwen2.5-coder:7b ./setup.sh       # Alternative option"
+  echo "  TERMGPT_MODEL=stable-code:3b ./setup.sh         # Lightweight option"
   echo
 }
 

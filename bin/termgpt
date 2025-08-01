@@ -30,7 +30,7 @@ if [ "$#" -eq 1 ] && { [ "$1" = "--version" ] || [ "$1" = "-V" ]; }; then
 fi
 
 # Default model
-DEFAULT_MODEL="deepseek-coder:6.7b"
+DEFAULT_MODEL="codellama:7b-instruct"
 API_URL="http://localhost:11434/api/generate"
 
 # Save environment variable if set (before config might override it)
@@ -129,28 +129,42 @@ fi
 # Build platform context
 PLATFORM_CONTEXT=""
 if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
-  PLATFORM_CONTEXT="Target platform: $TERMGPT_PLATFORM. "
+  case "$TERMGPT_PLATFORM" in
+    macos)
+      PLATFORM_CONTEXT="Target platform: macOS. Use BSD-style commands (netstat without -p, lsof for process info). "
+      ;;
+    linux)
+      PLATFORM_CONTEXT="Target platform: Linux. Use GNU-style commands (netstat with -p supported). "
+      ;;
+    wsl)
+      PLATFORM_CONTEXT="Target platform: WSL/Linux. Use GNU-style commands but optimized for WSL environment. "
+      ;;
+    *)
+      PLATFORM_CONTEXT="Target platform: $TERMGPT_PLATFORM. "
+      ;;
+  esac
+  
   if command -v get_clipboard_cmd >/dev/null 2>&1; then
     CLIPBOARD_CMD=$(get_clipboard_cmd)
     if [ -n "$CLIPBOARD_CMD" ]; then
-      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}Use '$CLIPBOARD_CMD' for clipboard operations. "
+      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}Clipboard: '$CLIPBOARD_CMD' available. "
     fi
   fi
   if command -v get_open_url_cmd >/dev/null 2>&1; then
     OPEN_CMD=$(get_open_url_cmd)
     if [ -n "$OPEN_CMD" ]; then
-      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}Use '$OPEN_CMD' to open files/URLs. "
+      PLATFORM_CONTEXT="${PLATFORM_CONTEXT}URL opener: '$OPEN_CMD' available. "
     fi
   fi
 fi
 
 PROMPT="You are a shell command generator. Convert each natural language request into a single POSIX-compliant shell command.
-${PLATFORM_CONTEXT}IMPORTANT: Generate commands compatible with the target platform. On macOS, netstat does not support -p flag, use lsof instead. On Linux, use standard netstat with -p.
-CRITICAL: Only output the raw command. No explanations, no markdown, no code blocks, no extra text.
+${PLATFORM_CONTEXT}CRITICAL: Only output the raw command. No explanations, no markdown, no code blocks, no extra text.
 DO NOT start with phrases like 'Here is the command:' or 'The command is:'.
 Just output the bare shell command and nothing else.
 
 Request: $USER_PROMPT"
+
 
 WORD_COUNT=$(echo "$PROMPT" | wc -w)
 TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))

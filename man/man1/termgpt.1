@@ -1,10 +1,16 @@
 .\" Man page for termgpt
-.TH TERMGPT 1 "2024" "TermGPT" "User Commands"
+.TH TERMGPT 1 "2025" "TermGPT" "User Commands"
 .SH NAME
 termgpt \- platform-aware natural language to POSIX shell command converter
 .SH SYNOPSIS
 .B termgpt
 .I "natural language request"
+.br
+.B termgpt
+.RB [ --version | -V ]
+.br
+.B termgpt
+.RB [ --model | -m ]
 .SH DESCRIPTION
 .B termgpt
 translates natural language descriptions into POSIX-compliant shell commands
@@ -17,8 +23,15 @@ platform-specific command optimization, and intelligent tool integration.
 Commands are never executed automatically - they are always presented for
 user review and confirmation.
 .SH OPTIONS
-This command takes a single argument: the natural language description of
-the desired shell command.
+.TP
+.BR --version , -V
+Display version information and exit
+.TP
+.BR --model , -m
+Display current model configuration and exit
+.TP
+.I "natural language request"
+The natural language description of the desired shell command
 .SH INTERACTIVE MENU
 After generating a command, termgpt presents an interactive menu with the
 following options:
@@ -57,6 +70,14 @@ Uses xdg-open for files and URLs
 Detects package manager (apt, yum, pacman, etc.)
 .IP \(bu 2
 Optimizes for systemd service management
+.PP
+.B WSL Integration:
+.IP \(bu 2
+Automatic WSL detection via /proc/version
+.IP \(bu 2
+Optimized model recommendations for limited resources
+.IP \(bu 2
+Performance-aware default settings
 .SH FILES
 .TP
 .I /usr/local/lib/termgpt/termgpt-check.sh
@@ -118,7 +139,13 @@ Linux result: xdg-open .
 Local LLM server (https://ollama.ai)
 .TP
 .B codellama:7b-instruct
-Default LLM model (can be changed in the script)
+Default LLM model with excellent instruction following and platform awareness
+.TP
+.B qwen2.5-coder:7b
+Alternative coding model with good performance/memory ratio
+.TP
+.B stable-code:3b
+Lightweight model for WSL and resource-constrained systems
 .TP
 .B jq
 Command-line JSON processor
@@ -154,7 +181,7 @@ manually review and execute any generated commands.
 .BR jq (1),
 .BR curl (1)
 .SH BUGS
-Report bugs at: https://github.com/YOUR-USERNAME/termgpt/issues
+Report bugs at: https://github.com/silohunt/termgpt/issues
 .SH AUTHOR
 TermGPT was created for safe, local natural language to shell command
 translation.
