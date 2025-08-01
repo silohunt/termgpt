@@ -12,7 +12,12 @@
 set -eu
 
 # Configuration
-DEFAULT_MODEL="codellama:7b-instruct"
+# Available models (in order of recommendation):
+# - deepseek-coder-v2:16b    - Best overall (MoE, 338 langs, 128K context) ~8GB
+# - qwen2.5-coder:7b         - Great performance/memory ratio ~6GB  
+# - deepseek-coder:6.7b      - Proven reliable ~7GB
+# - codellama:7b-instruct    - Original default ~4GB
+DEFAULT_MODEL="deepseek-coder:6.7b"  # Using proven V1 for stability
 FAST_MODEL="codellama:7b-instruct-q4_0"
 SMALL_MODEL="stable-code:3b"
 OLLAMA_API="http://localhost:11434/api/tags"
@@ -538,6 +543,19 @@ main() {
       info "  - Commands will be optimized for Linux"
       ;;
   esac
+  echo
+  
+  # Show completion message with model info
+  echo "====================================="
+  success "TermGPT setup completed!"
+  echo "====================================="
+  echo
+  info "Model installed: $MODEL"
+  echo
+  info "To use a different model, run:"
+  echo "  TERMGPT_MODEL=deepseek-coder-v2:16b ./setup.sh  # Best overall (MoE)"
+  echo "  TERMGPT_MODEL=qwen2.5-coder:7b ./setup.sh       # Fast & accurate"
+  echo "  TERMGPT_MODEL=codellama:7b-instruct ./setup.sh  # Original default"
   echo
 }
 
