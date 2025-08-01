@@ -33,6 +33,9 @@ fi
 DEFAULT_MODEL="codellama:7b-instruct"
 API_URL="http://localhost:11434/api/generate"
 
+# Save environment variable if set (before config might override it)
+TERMGPT_MODEL_FROM_ENV="${TERMGPT_MODEL:-}"
+
 # Cross-platform function to check if a file is world-writable
 is_world_writable() {
   file="$1"
@@ -80,8 +83,17 @@ if [ -n "$PLATFORM_CONFIG" ] && [ -r "$PLATFORM_CONFIG" ] && [ -f "$PLATFORM_CON
   fi
 fi
 
-# Set model after config is loaded (environment takes precedence)
-MODEL="${TERMGPT_MODEL:-$DEFAULT_MODEL}"
+# Set model - environment variable takes precedence over config
+if [ -n "$TERMGPT_MODEL_FROM_ENV" ]; then
+  # Use environment variable (was set before config loaded)
+  MODEL="$TERMGPT_MODEL_FROM_ENV"
+elif [ -n "${TERMGPT_MODEL:-}" ]; then
+  # Use config file setting
+  MODEL="$TERMGPT_MODEL"
+else
+  # Use default
+  MODEL="$DEFAULT_MODEL"
+fi
 
 # Handle model info flag (after config is loaded)
 if [ "$#" -eq 1 ] && { [ "$1" = "--model" ] || [ "$1" = "-m" ]; }; then
