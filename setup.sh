@@ -207,8 +207,15 @@ install_ollama() {
   
   # Use Ollama's official install script (with user confirmation)
   warn "This will download and execute Ollama's installation script from the internet."
-  printf "Do you want to proceed? [y/N] "
-  read -r response
+  
+  # Check if stdin is available
+  if [ -t 0 ]; then
+    printf "Do you want to proceed? [y/N] "
+    read -r response
+  else
+    warn "No input available, skipping Ollama installation"
+    response="n"
+  fi
   case "$response" in
     [Yy]*)
       if curl -fsSL https://ollama.ai/install.sh | sh; then
@@ -450,8 +457,15 @@ main() {
   
   # Check and install jq
   if ! check_command jq; then
-    printf "jq is required. Install it? [y/N] "
-    read -r response
+    # Check if stdin is available
+    if [ -t 0 ]; then
+      printf "jq is required. Install it? [y/N] "
+      read -r response
+    else
+      error "jq is required but not installed"
+      error "Run with interactive terminal or install jq manually"
+      response="n"
+    fi
     case "$response" in
       [Yy]*) install_jq || exit 1 ;;
       *) error "jq is required. Please install it manually."; exit 1 ;;
@@ -468,8 +482,15 @@ main() {
   
   # Check and install Ollama
   if ! check_command ollama; then
-    printf "Ollama is required. Install it? [y/N] "
-    read -r response
+    # Check if stdin is available
+    if [ -t 0 ]; then
+      printf "Ollama is required. Install it? [y/N] "
+      read -r response
+    else
+      error "Ollama is required but not installed"
+      error "Run with interactive terminal or install Ollama manually"
+      response="n"
+    fi
     case "$response" in
       [Yy]*) install_ollama || exit 1 ;;
       *) error "Ollama is required. Please install it from https://ollama.ai"; exit 1 ;;
@@ -480,8 +501,15 @@ main() {
   
   # Start Ollama if needed
   if ! curl -s -f -o /dev/null "$OLLAMA_API" 2>/dev/null; then
-    printf "Ollama is not running. Start it? [y/N] "
-    read -r response
+    # Check if stdin is available
+    if [ -t 0 ]; then
+      printf "Ollama is not running. Start it? [y/N] "
+      read -r response
+    else
+      error "Ollama is not running"
+      error "Please start Ollama manually: ollama serve"
+      response="n"
+    fi
     case "$response" in
       [Yy]*) start_ollama || exit 1 ;;
       *) warn "Please start Ollama manually with: ollama serve" ;;
