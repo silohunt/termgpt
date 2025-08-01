@@ -37,24 +37,45 @@ API_URL="http://localhost:11434/api/generate"
 TERMGPT_MODEL_FROM_ENV="${TERMGPT_MODEL:-}"
 
 # Cross-platform function to check if a file is world-writable
+# Returns: 0 if world-writable (unsafe), 1 if not world-writable (safe)
+# IMPORTANT: On error or unknown platform, assumes world-writable for safety
 is_world_writable() {
   file="$1"
+  
+  # Check file exists first
+  if [ ! -e "$file" ]; then
+    return 1  # Non-existent file is not writable
+  fi
+  
   if [ "$(uname)" = "Darwin" ]; then
     # macOS: use stat -f
-    perms=$(stat -f "%p" "$file" 2>/dev/null || echo "0")
-    # Extract last 3 digits and check if world-writable (xx2, xx3, xx6, xx7)
+    perms=$(stat -f "%p" "$file" 2>/dev/null) || return 0  # Assume unsafe on error
+    if [ -z "$perms" ]; then
+      return 0  # Assume unsafe if empty
+    fi
+    # Extract last digit and check if world-writable (xx2, xx3, xx6, xx7)
     world_perm=$((perms % 10))
   else
-    # Linux: use stat -c
-    perms=$(stat -c "%a" "$file" 2>/dev/null || echo "0")
-    # Check third character for write permission
-    world_perm=$(echo "$perms" | cut -c3)
+    # Linux/Unix: use stat -c or fallback to ls
+    perms=$(stat -c "%a" "$file" 2>/dev/null)
+    if [ -z "$perms" ]; then
+      # Fallback to ls -l parsing if stat fails
+      ls_output=$(ls -l "$file" 2>/dev/null) || return 0  # Assume unsafe on error
+      # Check the 9th permission character (world write)
+      case "$ls_output" in
+        ???????w*) return 0 ;;  # World-writable
+        *) return 1 ;;          # Not world-writable
+      esac
+    fi
+    # Get the last digit (world permissions)
+    world_perm=$((perms % 10))
   fi
   
   # Check if world has write permission (2, 3, 6, or 7)
   case "$world_perm" in
-    2|3|6|7) return 0 ;; # World-writable
-    *) return 1 ;;       # Not world-writable
+    2|3|6|7) return 0 ;; # World-writable (unsafe)
+    0|1|4|5) return 1 ;; # Not world-writable (safe)
+    *) return 0 ;;       # Unknown = assume unsafe
   esac
 }
 
