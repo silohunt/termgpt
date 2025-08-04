@@ -32,13 +32,13 @@ for i in "${!test_commands[@]}"; do
     
     # Test LLM baseline
     export TERMGPT_DISABLE_POSTPROCESSING=1
-    llm_output=$(./bin/termgpt --eval "$query" 2>&1 || echo "ERROR")
-    llm_cmd=$(echo "$llm_output" | grep -A1 "Generated Command:" | tail -1 | xargs 2>/dev/null || echo "")
+    llm_output=$(../../bin/termgpt --eval "$query" 2>&1 || echo "ERROR")
+    llm_cmd=$(echo "$llm_output" | grep -A1 "Generated Command:" | tail -1 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
     unset TERMGPT_DISABLE_POSTPROCESSING
     
     # Test with post-processing
-    postproc_output=$(./bin/termgpt --eval "$query" 2>&1 || echo "ERROR")
-    postproc_cmd=$(echo "$postproc_output" | grep -A1 "Generated Command:" | tail -1 | xargs 2>/dev/null || echo "")
+    postproc_output=$(../../bin/termgpt --eval "$query" 2>&1 || echo "ERROR")
+    postproc_cmd=$(echo "$postproc_output" | grep -A1 "Generated Command:" | tail -1 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
     
     # Simple validation: command exists, starts with valid command, reasonable length
     llm_valid=0

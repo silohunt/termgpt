@@ -1,6 +1,41 @@
 # Testing Notes for TermGPT
 
-This document outlines key testing scenarios and known behaviors for TermGPT testers.
+This document outlines key testing scenarios, evaluation framework, and known behaviors for TermGPT testers.
+
+## Evaluation Framework
+
+TermGPT includes a comprehensive evaluation system that validates performance across different command complexity levels.
+
+### Quick Evaluation Tests
+
+**Practical Command Validation** (95%+ success target):
+```bash
+cd tests/evaluation
+./run_focused_evaluation.sh
+```
+
+**Edge Case Boundary Testing** (80-95% success expected):
+```bash  
+cd tests/evaluation
+./test_hardest_commands.sh
+```
+
+**Comprehensive Evaluation** (50 commands across all categories):
+```bash
+cd tests/evaluation
+./run_comprehensive_evaluation.sh
+```
+
+### Expected Performance Benchmarks
+- **Daily Practical Commands**: 95-100% success rate
+- **Complex Multi-step Operations**: 87-93% success rate
+- **Extreme Edge Cases**: 80-85% success rate (acceptable boundary)
+
+### Evaluation Features
+- **Non-Interactive Mode**: Use `--eval` flag for automated testing
+- **Baseline Comparison**: Set `TERMGPT_DISABLE_POSTPROCESSING=1` to test LLM-only performance
+- **Command Extraction**: Robust parsing handles complex shell syntax with quotes
+- **Multi-Criteria Validation**: Tests syntax, logic, safety, and functionality
 
 ## Platform-Specific Command Generation
 

@@ -53,12 +53,12 @@ test_command() {
     
     # Test LLM baseline (without post-processing)
     export TERMGPT_DISABLE_POSTPROCESSING=1
-    llm_output=$(timeout 30s ./bin/termgpt --eval "$query" 2>&1 || echo "TIMEOUT_OR_ERROR")
+    llm_output=$(timeout 30s ../../bin/termgpt --eval "$query" 2>&1 || echo "TIMEOUT_OR_ERROR")
     llm_result=$(echo "$llm_output" | grep -A1 "Generated Command:" | tail -1 | xargs)
     unset TERMGPT_DISABLE_POSTPROCESSING
     
     # Test with post-processing
-    postproc_output=$(timeout 30s ./bin/termgpt --eval "$query" 2>&1 || echo "TIMEOUT_OR_ERROR")
+    postproc_output=$(timeout 30s ../../bin/termgpt --eval "$query" 2>&1 || echo "TIMEOUT_OR_ERROR")
     postproc_result=$(echo "$postproc_output" | grep -A1 "Generated Command:" | tail -1 | xargs)
     
     # Basic validation - check if result looks like a valid command

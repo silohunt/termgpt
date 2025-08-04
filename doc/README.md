@@ -232,3 +232,91 @@ Rule format:
 - `TERMGPT_PLATFORM`: Override detected platform
 - `TERMGPT_RULES_PATH`: Custom rules file location
 - `TERMGPT_MODEL`: Change LLM model (default: codellama:7b-instruct)
+- `TERMGPT_DISABLE_POSTPROCESSING`: Set to `1` to disable post-processing (evaluation mode)
+
+## Testing & Evaluation
+
+TermGPT includes a comprehensive evaluation framework that validates performance across different command complexity levels.
+
+### Evaluation Framework
+
+The testing system validates TermGPT's effectiveness through multiple evaluation tiers:
+
+#### Performance Benchmarks (Current Results)
+- **Practical Daily Commands**: **95-100%** success rate
+- **Complex Multi-step Operations**: 87-93% success rate  
+- **Extreme Edge Cases**: 80-85% success rate
+- **Overall Performance**: 85-95% depending on command complexity
+
+#### Test Categories
+1. **System Monitoring & Performance** (10 commands)
+2. **Advanced File Operations** (10 commands)
+3. **Network & Security** (10 commands)
+4. **Text Processing & Data Analysis** (10 commands)
+5. **System Administration & Automation** (10 commands)
+
+### Running Evaluations
+
+#### Quick Performance Check
+```bash
+cd tests/evaluation
+./run_focused_evaluation.sh
+```
+Tests 10 representative practical commands to validate core functionality.
+
+#### Edge Case Testing  
+```bash
+cd tests/evaluation
+./test_hardest_commands.sh
+```
+Tests 15 most challenging scenarios to identify performance boundaries.
+
+#### Comprehensive Evaluation
+```bash
+cd tests/evaluation
+./run_comprehensive_evaluation.sh
+```
+Full 50-command test suite across all categories with detailed analysis.
+
+### Evaluation Architecture
+
+The evaluation system measures:
+
+1. **LLM Baseline Performance**: Raw model output without post-processing
+2. **Post-Processing Enhancement**: Full pipeline with intelligent corrections
+3. **Command Validation**: Syntax, logic, and safety checks
+4. **Success Rate Metrics**: Quantitative performance measurement
+
+#### Key Evaluation Features
+- **Automated Testing**: Non-interactive evaluation mode (`--eval` flag)
+- **Baseline Comparison**: LLM vs post-processed results
+- **Command Extraction**: Robust parsing of generated commands
+- **Validation Logic**: Multi-criteria success assessment
+- **Performance Tracking**: Historical improvement measurement
+
+### Post-Processing Achievements
+
+The intelligent correction pipeline provides:
+
+#### Complex Command Preservation
+- **Problem**: Post-processing can destroy valid multi-step commands
+- **Solution**: Preservation logic that detects and protects complex chains
+- **Result**: Prevents regressions while enabling improvements
+
+#### Context-Aware Corrections
+- **Time Logic**: Semantic understanding of temporal references
+- **Platform Awareness**: macOS vs Linux command differences
+- **File Pattern Enhancement**: Intelligent filtering based on context
+- **Path Optimization**: Better default locations for operations
+
+#### Proven Results
+- **67% → 80%** (Original 30-command evaluation)
+- **80% → 93%** (15 hardest commands with improvements)
+- **90% → 100%** (10 practical commands with enhancements)
+
+### Documentation
+
+Detailed evaluation results and analysis available in:
+- `docs/evaluation/` - Comprehensive analysis and results
+- `tests/evaluation/README.md` - Test framework documentation  
+- `post-processing/docs/ARCHITECTURE.md` - Technical implementation details

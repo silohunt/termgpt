@@ -48,6 +48,31 @@ apply_all_corrections() {
     # Export original query for corrections that need context
     export TERMGPT_ORIGINAL_QUERY="$original_query"
     
+    # 0. Complex command preservation (FIRST - before other corrections can break things)
+    if command -v preserve_complex_chains >/dev/null 2>&1; then
+        if preserve_complex_chains "$command" "$original_query"; then
+            # Command preserved, return as-is
+            echo "$command"
+            return 0
+        fi
+    fi
+    
+    # Check for script generation requests (only if LLM command is clearly inadequate)
+    if command -v detect_script_generation >/dev/null 2>&1; then
+        if script_result=$(detect_script_generation "$command" "$original_query"); then
+            echo "$script_result"
+            return 0
+        fi
+    fi
+    
+    # Check for improved error analysis
+    if command -v improve_error_analysis >/dev/null 2>&1; then
+        if error_result=$(improve_error_analysis "$command" "$original_query"); then
+            echo "$error_result"
+            return 0
+        fi
+    fi
+    
     # Apply corrections in order of importance
     # 1. Security fixes (must come first)
     command=$(apply_security_corrections "$command")
