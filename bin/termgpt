@@ -147,48 +147,42 @@ if [ -z "$USER_PROMPT" ]; then
   exit 1
 fi
 
-# Platform-specific command post-processing
-apply_platform_corrections() {
-  local command="$1"
-  local platform="${TERMGPT_PLATFORM:-unknown}"
-  
-  # Common corrections for all platforms
-  # Fix mtime confusion: "from last week" should use -mtime -7, not +7
-  case "$command" in
-    *-mtime\ +7*) command=$(printf '%s\n' "$command" | sed 's/-mtime +7/-mtime -7/g') ;;
-  esac
-  
-  # Add .log filter if command seems to be looking for log files but missing extension
-  if printf '%s' "$command" | grep -q 'find.*-type f' && ! printf '%s' "$command" | grep -q '\.log'; then
-    # Check if this might be a log-related command by looking for common patterns
-    case "$command" in
-      *gzip*|*compress*|*archive*) 
-        # Likely working with log files, add .log filter
-        command=$(printf '%s\n' "$command" | sed 's/find \([^ ]*\) -type f/find \1 -name "*.log" -type f/')
-        ;;
-    esac
+# Source post-processing library
+find_postprocess_lib() {
+  if [ -f "$(dirname "$0")/../post-processing/lib/postprocess.sh" ]; then
+    echo "$(dirname "$0")/../post-processing/lib/postprocess.sh"
+  elif [ -f "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh"
+  elif [ -f "/usr/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "/usr/lib/termgpt/post-processing/lib/postprocess.sh"
+  elif [ -f "$HOME/.config/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "$HOME/.config/termgpt/post-processing/lib/postprocess.sh"
+  else
+    return 1
   fi
-  
-  case "$platform" in
-    macos)
-      # Fix common macOS issues
-      # Use printf for safety - prevents command injection
-      # Remove unsupported netstat -p flag
-      command=$(printf '%s\n' "$command" | sed 's/netstat -[a-zA-Z]*p[a-zA-Z]*/netstat -an/g')
-      # Fix UDP case sensitivity (macOS outputs lowercase)
-      command=$(printf '%s\n' "$command" | sed 's/grep [^|]*UDP[^|]*/grep -i udp/g')
-      command=$(printf '%s\n' "$command" | sed 's/grep "UDP"/grep -i "udp"/g')
-      command=$(printf '%s\n' "$command" | sed 's/grep '\''UDP'\''/grep -i '\''udp'\''/g')
-      # Use lsof instead of netstat -p combinations
-      command=$(printf '%s\n' "$command" | sed 's/netstat.*-p.*|.*grep/lsof -i/g')
-      ;;
-    linux)
-      # Linux-specific corrections could go here
-      ;;
-  esac
-  
-  printf '%s' "$command"
 }
+
+POSTPROCESS_LIB=$(find_postprocess_lib)
+if [ -n "$POSTPROCESS_LIB" ] && [ -r "$POSTPROCESS_LIB" ] && [ -f "$POSTPROCESS_LIB" ]; then
+  # Basic safety check
+  if ! is_world_writable "$POSTPROCESS_LIB"; then
+    # Set the library path so the sourced script can find itself
+    POSTPROCESS_LIB_PATH="$POSTPROCESS_LIB"
+    export POSTPROCESS_LIB_PATH
+    . "$POSTPROCESS_LIB"
+  else
+    echo "Warning: Post-processing library $POSTPROCESS_LIB is world-writable, skipping"
+    # Define fallback function
+    apply_all_corrections() {
+      printf '%s' "$1"
+    }
+  fi
+else
+  # Define fallback function if library not found
+  apply_all_corrections() {
+    printf '%s' "$1"
+  }
+fi
 
 # Build minimal platform context
 PLATFORM_CONTEXT=""
@@ -269,8 +263,8 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" = "null" ]; then
   exit 1
 fi
 
-# Apply platform-specific corrections
-COMMAND=$(apply_platform_corrections "$COMMAND")
+# Apply all post-processing corrections with original query context
+COMMAND=$(apply_all_corrections "$COMMAND" "" "$USER_PROMPT")
 
 # Find the check script (support multiple installation methods)
 find_check_script() {
