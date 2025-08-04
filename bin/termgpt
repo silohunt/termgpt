@@ -29,6 +29,13 @@ if [ "$#" -eq 1 ] && { [ "$1" = "--version" ] || [ "$1" = "-V" ]; }; then
   exit 0
 fi
 
+# Handle eval flag (non-interactive mode for evaluation)
+EVAL_MODE=0
+if [ "$#" -ge 1 ] && [ "$1" = "--eval" ]; then
+  EVAL_MODE=1
+  shift
+fi
+
 # Default model
 DEFAULT_MODEL="codellama:7b-instruct"
 API_URL="http://localhost:11434/api/generate"
@@ -263,8 +270,13 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" = "null" ]; then
   exit 1
 fi
 
-# Apply all post-processing corrections with original query context
-COMMAND=$(apply_all_corrections "$COMMAND" "" "$USER_PROMPT")
+# Apply all post-processing corrections with original query context (unless disabled)
+if [ "${TERMGPT_DISABLE_POSTPROCESSING:-0}" = "1" ]; then
+  # Skip post-processing for evaluation
+  :
+else
+  COMMAND=$(apply_all_corrections "$COMMAND" "" "$USER_PROMPT")
+fi
 
 # Find the check script (support multiple installation methods)
 find_check_script() {
@@ -333,6 +345,12 @@ fi
 echo
 echo "Generated Command:"
 echo "$COMMAND"
+
+# Skip interactive mode if --eval flag is used
+if [ "$EVAL_MODE" -eq 1 ]; then
+  exit 0
+fi
+
 echo
 echo "Options:"
 echo "  [c] Copy to clipboard"
