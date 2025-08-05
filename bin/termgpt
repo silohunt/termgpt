@@ -23,18 +23,70 @@ set -eu
 
 VERSION="0.8.0"
 
-# Handle version flag
-if [ "$#" -eq 1 ] && { [ "$1" = "--version" ] || [ "$1" = "-V" ]; }; then
-  echo "termgpt $VERSION"
-  exit 0
+# Handle subcommands and special flags
+if [ "$#" -ge 1 ]; then
+  case "$1" in
+    # Subcommands
+    init)
+      shift
+      exec "$(dirname "$0")/termgpt-init" "$@"
+      ;;
+    
+    # Version flags
+    --version|-V)
+      echo "termgpt $VERSION"
+      exit 0
+      ;;
+    
+    # Model info flag  
+    --model|-m)
+      # This will be handled later after config is loaded
+      SHOW_MODEL=1
+      ;;
+    
+    # Eval flag (non-interactive mode)
+    --eval)
+      EVAL_MODE=1
+      shift
+      ;;
+    
+    # Help flag
+    --help|-h|help)
+      echo "TermGPT - Natural language to shell command converter"
+      echo ""
+      echo "Usage:"
+      echo "  termgpt <request>              Generate a shell command from natural language"
+      echo "  termgpt init [options]         Initialize and configure TermGPT"
+      echo ""
+      echo "Options:"
+      echo "  --version, -V                  Show version information"
+      echo "  --model, -m                    Show current model configuration"
+      echo "  --eval <request>               Non-interactive mode (output command only)"
+      echo "  --help, -h                     Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  termgpt \"list all python files\""
+      echo "  termgpt \"find files larger than 100MB\""
+      echo "  termgpt init --model codellama:13b"
+      echo ""
+      echo "For more information, visit: https://github.com/silohunt/termgpt"
+      exit 0
+      ;;
+    
+    # Default: treat as natural language request
+    *)
+      # Continue with normal processing
+      ;;
+  esac
+else
+  # No arguments provided
+  SHOW_MODEL=${SHOW_MODEL:-0}
+  EVAL_MODE=${EVAL_MODE:-0}
 fi
 
-# Handle eval flag (non-interactive mode for evaluation)
-EVAL_MODE=0
-if [ "$#" -ge 1 ] && [ "$1" = "--eval" ]; then
-  EVAL_MODE=1
-  shift
-fi
+# Set defaults for flags if not set
+SHOW_MODEL=${SHOW_MODEL:-0}
+EVAL_MODE=${EVAL_MODE:-0}
 
 # Default model
 DEFAULT_MODEL="codellama:7b-instruct"
@@ -125,7 +177,8 @@ else
 fi
 
 # Handle model info flag (after config is loaded)
-if [ "$#" -eq 1 ] && { [ "$1" = "--model" ] || [ "$1" = "-m" ]; }; then
+# Handle model flag after configuration is loaded
+if [ "$SHOW_MODEL" -eq 1 ]; then
   echo "Current model: $MODEL"
   if [ -f "$HOME/.config/termgpt/platform.conf" ]; then
     echo "Config: $HOME/.config/termgpt/platform.conf"
@@ -136,21 +189,21 @@ fi
 # Quick dependency check
 if ! command -v jq >/dev/null 2>&1; then
   echo "Error: jq is not installed"
-  echo "Please run ./setup.sh to install dependencies"
+  echo "Please run 'termgpt init' to install dependencies"
   exit 1
 fi
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "Error: curl is not installed"
-  echo "Please run ./setup.sh to install dependencies"
+  echo "Please run 'termgpt init' to install dependencies"
   exit 1
 fi
 
 USER_PROMPT="$*"
 if [ -z "$USER_PROMPT" ]; then
   echo "Usage: termgpt <natural language request>"
-  echo "       termgpt --version | -V    Show version"
-  echo "       termgpt --model | -m      Show current model"
+  echo ""
+  echo "Try 'termgpt --help' for more information."
   exit 1
 fi
 
@@ -232,7 +285,7 @@ if [ "$HTTP_CODE" = "000" ]; then
   echo "Error: Cannot connect to Ollama at $API_URL"
   echo
   echo "Please ensure Ollama is running. You can:"
-  echo "  1. Run ./setup.sh to install and start Ollama"
+  echo "  1. Run 'termgpt init' to install and start Ollama"
   echo "  2. Or start it manually with: ollama serve"
   exit 1
 elif [ "$HTTP_CODE" -ne 200 ]; then
@@ -241,7 +294,7 @@ elif [ "$HTTP_CODE" -ne 200 ]; then
   if [ "$HTTP_CODE" = "404" ]; then
     echo
     echo "Model '$MODEL' may not be available."
-    echo "Run ./setup.sh to download it, or manually: ollama pull $MODEL"
+    echo "Run 'termgpt init --model $MODEL' to download it, or manually: ollama pull $MODEL"
   fi
   exit 1
 fi

@@ -1,0 +1,559 @@
+#!/bin/sh
+#
+# termgpt-init - Initialize and configure TermGPT
+#
+# Usage: termgpt init [options]
+#
+# Options:
+#   --headless              Non-interactive mode, use all defaults
+#   --model MODEL           Specify LLM model (default: codellama:7b-instruct)
+#   --force                 Force re-download of models and dependencies
+#   --path PATH             Override config path (default: ~/.config/termgpt)
+#   --skip-ollama           Skip Ollama installation check
+#   --reconfigure           Update existing configuration
+#   --check                 Verify installation without making changes
+#
+
+set -eu
+
+# Version should match main termgpt
+VERSION="0.8.0"
+
+# Default values
+HEADLESS=0
+FORCE=0
+SKIP_OLLAMA=0
+RECONFIGURE=0
+CHECK_ONLY=0
+MODEL="codellama:7b-instruct"
+CONFIG_PATH="$HOME/.config/termgpt"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Colors for output (if terminal supports it)
+if [ -t 1 ]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[0;34m'
+  NC='\033[0m' # No Color
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  NC=''
+fi
+
+# Print colored output
+print_error() {
+  printf "${RED}✗ %s${NC}\n" "$1" >&2
+}
+
+print_success() {
+  printf "${GREEN}✓ %s${NC}\n" "$1"
+}
+
+print_warning() {
+  printf "${YELLOW}⚠ %s${NC}\n" "$1"
+}
+
+print_info() {
+  printf "${BLUE}→ %s${NC}\n" "$1"
+}
+
+# Show usage
+show_usage() {
+  cat << EOF
+Usage: termgpt init [options]
+
+Initialize and configure TermGPT on your system.
+
+Options:
+  --headless              Non-interactive mode, use all defaults
+  --model MODEL           Specify LLM model (default: codellama:7b-instruct)
+  --force                 Force re-download of models and dependencies
+  --path PATH             Override config path (default: ~/.config/termgpt)
+  --skip-ollama           Skip Ollama installation check
+  --reconfigure           Update existing configuration
+  --check                 Verify installation without making changes
+  --help                  Show this help message
+
+Examples:
+  termgpt init                          # Interactive setup
+  termgpt init --headless               # Automated setup with defaults
+  termgpt init --model codellama:13b    # Use specific model
+  termgpt init --reconfigure            # Update existing installation
+  termgpt init --check                  # Verify installation
+
+EOF
+}
+
+# Parse command line arguments
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --headless)
+      HEADLESS=1
+      shift
+      ;;
+    --model)
+      if [ $# -lt 2 ]; then
+        print_error "Missing argument for --model"
+        exit 1
+      fi
+      MODEL="$2"
+      shift 2
+      ;;
+    --force)
+      FORCE=1
+      shift
+      ;;
+    --path)
+      if [ $# -lt 2 ]; then
+        print_error "Missing argument for --path"
+        exit 1
+      fi
+      CONFIG_PATH="$2"
+      shift 2
+      ;;
+    --skip-ollama)
+      SKIP_OLLAMA=1
+      shift
+      ;;
+    --reconfigure)
+      RECONFIGURE=1
+      shift
+      ;;
+    --check)
+      CHECK_ONLY=1
+      shift
+      ;;
+    --help|-h)
+      show_usage
+      exit 0
+      ;;
+    *)
+      print_error "Unknown option: $1"
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# Detect platform
+detect_platform() {
+  OS="$(uname -s)"
+  ARCH="$(uname -m)"
+  
+  case "$OS" in
+    Darwin)
+      PLATFORM="macos"
+      ;;
+    Linux)
+      if grep -q Microsoft /proc/version 2>/dev/null; then
+        PLATFORM="wsl"
+      else
+        PLATFORM="linux"
+      fi
+      ;;
+    *)
+      PLATFORM="unknown"
+      ;;
+  esac
+  
+  export PLATFORM
+  export ARCH
+}
+
+# Check if command exists
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Install dependencies based on platform
+install_dependencies() {
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    return 0
+  fi
+  
+  print_info "Installing dependencies..."
+  
+  # Check for jq
+  if ! command_exists jq; then
+    if [ "$HEADLESS" -eq 1 ]; then
+      print_error "jq is required but not installed. Please install it manually."
+      return 1
+    fi
+    
+    case "$PLATFORM" in
+      macos)
+        if command_exists brew; then
+          print_info "Installing jq via Homebrew..."
+          brew install jq
+        else
+          print_error "Please install Homebrew first: https://brew.sh"
+          return 1
+        fi
+        ;;
+      linux|wsl)
+        if command_exists apt-get; then
+          print_info "Installing jq via apt..."
+          sudo apt-get update && sudo apt-get install -y jq
+        elif command_exists yum; then
+          print_info "Installing jq via yum..."
+          sudo yum install -y jq
+        else
+          print_error "Please install jq manually for your distribution"
+          return 1
+        fi
+        ;;
+    esac
+  fi
+  
+  # Check for curl
+  if ! command_exists curl; then
+    print_error "curl is required but not installed"
+    return 1
+  fi
+  
+  print_success "Dependencies installed"
+  return 0
+}
+
+# Install or verify Ollama
+setup_ollama() {
+  if [ "$SKIP_OLLAMA" -eq 1 ]; then
+    print_info "Skipping Ollama setup (--skip-ollama specified)"
+    return 0
+  fi
+  
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    if command_exists ollama; then
+      print_success "Ollama is installed"
+    else
+      print_error "Ollama is not installed"
+      return 1
+    fi
+    return 0
+  fi
+  
+  # Check if Ollama is installed
+  if command_exists ollama && [ "$FORCE" -eq 0 ]; then
+    print_success "Ollama already installed"
+  else
+    if [ "$HEADLESS" -eq 0 ]; then
+      printf "Install Ollama? [Y/n] "
+      read -r response
+      case "$response" in
+        [nN][oO]|[nN])
+          print_warning "Skipping Ollama installation"
+          return 0
+          ;;
+      esac
+    fi
+    
+    print_info "Installing Ollama..."
+    if ! curl -fsSL https://ollama.ai/install.sh | sh; then
+      print_error "Failed to install Ollama"
+      return 1
+    fi
+  fi
+  
+  # Start Ollama service
+  print_info "Starting Ollama service..."
+  if command_exists systemctl; then
+    sudo systemctl start ollama 2>/dev/null || true
+  else
+    # Try to start in background
+    ollama serve >/dev/null 2>&1 &
+    sleep 2
+  fi
+  
+  print_success "Ollama setup complete"
+  return 0
+}
+
+# Download specified model
+download_model() {
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    # Check if model exists
+    if ollama list 2>/dev/null | grep -q "$MODEL"; then
+      print_success "Model $MODEL is available"
+    else
+      print_error "Model $MODEL is not downloaded"
+      return 1
+    fi
+    return 0
+  fi
+  
+  # Check if model already exists
+  if ollama list 2>/dev/null | grep -q "$MODEL" && [ "$FORCE" -eq 0 ]; then
+    print_success "Model $MODEL already downloaded"
+    return 0
+  fi
+  
+  if [ "$HEADLESS" -eq 0 ] && [ "$FORCE" -eq 0 ]; then
+    printf "Download model $MODEL? (~4GB) [Y/n] "
+    read -r response
+    case "$response" in
+      [nN][oO]|[nN])
+        print_warning "Skipping model download"
+        return 0
+        ;;
+    esac
+  fi
+  
+  print_info "Downloading model $MODEL (this may take a while)..."
+  if ! ollama pull "$MODEL"; then
+    print_error "Failed to download model"
+    return 1
+  fi
+  
+  print_success "Model downloaded successfully"
+  return 0
+}
+
+# Create configuration files
+create_configuration() {
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    if [ -f "$CONFIG_PATH/platform.conf" ]; then
+      print_success "Configuration exists at $CONFIG_PATH"
+    else
+      print_error "Configuration not found at $CONFIG_PATH"
+      return 1
+    fi
+    return 0
+  fi
+  
+  # Create config directory
+  mkdir -p "$CONFIG_PATH"
+  mkdir -p "$CONFIG_PATH/lib"
+  
+  # Detect platform-specific tools
+  detect_clipboard_tool() {
+    case "$PLATFORM" in
+      macos)
+        echo "pbcopy"
+        ;;
+      linux|wsl)
+        if command_exists xclip; then
+          echo "xclip -selection clipboard"
+        elif command_exists xsel; then
+          echo "xsel --clipboard --input"
+        elif command_exists wl-copy; then
+          echo "wl-copy"
+        else
+          echo ""
+        fi
+        ;;
+      *)
+        echo ""
+        ;;
+    esac
+  }
+  
+  detect_url_handler() {
+    case "$PLATFORM" in
+      macos)
+        echo "open"
+        ;;
+      linux|wsl)
+        if command_exists xdg-open; then
+          echo "xdg-open"
+        else
+          echo ""
+        fi
+        ;;
+      *)
+        echo ""
+        ;;
+    esac
+  }
+  
+  CLIPBOARD_CMD=$(detect_clipboard_tool)
+  URL_HANDLER=$(detect_url_handler)
+  
+  # Create platform configuration
+  cat > "$CONFIG_PATH/platform.conf" << EOF
+# TermGPT Platform Configuration
+# Generated by termgpt init on $(date)
+
+# Platform detection
+TERMGPT_PLATFORM="$PLATFORM"
+TERMGPT_ARCH="$ARCH"
+
+# Model configuration
+TERMGPT_MODEL="$MODEL"
+
+# Tool configuration
+TERMGPT_CLIPBOARD_CMD="$CLIPBOARD_CMD"
+TERMGPT_URL_HANDLER="$URL_HANDLER"
+
+# Installation paths
+TERMGPT_CONFIG_PATH="$CONFIG_PATH"
+TERMGPT_VERSION="$VERSION"
+EOF
+
+  # Copy rules file if it doesn't exist
+  if [ ! -f "$CONFIG_PATH/rules.txt" ]; then
+    if [ -f "$BASE_DIR/share/termgpt/rules.txt" ]; then
+      cp "$BASE_DIR/share/termgpt/rules.txt" "$CONFIG_PATH/rules.txt"
+    fi
+  fi
+  
+  # Copy library files for user installation
+  if [ -f "$BASE_DIR/lib/termgpt-check.sh" ]; then
+    cp "$BASE_DIR/lib/termgpt-check.sh" "$CONFIG_PATH/lib/"
+  fi
+  
+  print_success "Configuration created at $CONFIG_PATH"
+  return 0
+}
+
+# Verify installation
+verify_installation() {
+  print_info "Verifying TermGPT installation..."
+  
+  ERRORS=0
+  
+  # Check dependencies
+  if ! command_exists jq; then
+    print_error "jq is not installed"
+    ERRORS=$((ERRORS + 1))
+  else
+    print_success "jq is installed"
+  fi
+  
+  if ! command_exists curl; then
+    print_error "curl is not installed"
+    ERRORS=$((ERRORS + 1))
+  else
+    print_success "curl is installed"
+  fi
+  
+  # Check Ollama
+  if ! command_exists ollama; then
+    print_error "Ollama is not installed"
+    ERRORS=$((ERRORS + 1))
+  else
+    print_success "Ollama is installed"
+    
+    # Check if Ollama is running
+    if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
+      print_success "Ollama service is running"
+    else
+      print_warning "Ollama service is not running (run 'ollama serve')"
+    fi
+    
+    # Check model
+    if ollama list 2>/dev/null | grep -q "$MODEL"; then
+      print_success "Model $MODEL is available"
+    else
+      print_error "Model $MODEL is not downloaded"
+      ERRORS=$((ERRORS + 1))
+    fi
+  fi
+  
+  # Check configuration
+  if [ -f "$CONFIG_PATH/platform.conf" ]; then
+    print_success "Configuration exists"
+    # Source and display key settings
+    . "$CONFIG_PATH/platform.conf"
+    print_info "  Platform: $TERMGPT_PLATFORM"
+    print_info "  Model: $TERMGPT_MODEL"
+    if [ -n "${TERMGPT_CLIPBOARD_CMD:-}" ]; then
+      print_info "  Clipboard: $TERMGPT_CLIPBOARD_CMD"
+    else
+      print_warning "  Clipboard: not configured"
+    fi
+  else
+    print_error "Configuration not found"
+    ERRORS=$((ERRORS + 1))
+  fi
+  
+  # Check termgpt binary
+  if [ -x "$SCRIPT_DIR/termgpt" ]; then
+    print_success "termgpt binary is executable"
+  else
+    print_error "termgpt binary not found or not executable"
+    ERRORS=$((ERRORS + 1))
+  fi
+  
+  if [ "$ERRORS" -eq 0 ]; then
+    print_success "Installation verified successfully!"
+    return 0
+  else
+    print_error "Installation has $ERRORS error(s)"
+    return 1
+  fi
+}
+
+# Main execution
+main() {
+  echo "TermGPT Init v$VERSION"
+  echo
+  
+  # Detect platform first
+  detect_platform
+  print_info "Detected platform: $PLATFORM ($ARCH)"
+  
+  # If check only, just verify
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    verify_installation
+    exit $?
+  fi
+  
+  # Check if reconfiguring
+  if [ "$RECONFIGURE" -eq 1 ] && [ -f "$CONFIG_PATH/platform.conf" ]; then
+    print_info "Reconfiguring existing installation..."
+    . "$CONFIG_PATH/platform.conf"
+    # Use existing model unless overridden
+    if [ "$MODEL" = "codellama:7b-instruct" ] && [ -n "${TERMGPT_MODEL:-}" ]; then
+      MODEL="$TERMGPT_MODEL"
+    fi
+  fi
+  
+  # Run setup steps
+  if ! install_dependencies; then
+    print_error "Failed to install dependencies"
+    exit 1
+  fi
+  
+  if ! setup_ollama; then
+    print_error "Failed to setup Ollama"
+    exit 1
+  fi
+  
+  if ! download_model; then
+    print_error "Failed to download model"
+    exit 1
+  fi
+  
+  if ! create_configuration; then
+    print_error "Failed to create configuration"
+    exit 1
+  fi
+  
+  # Final verification
+  echo
+  verify_installation
+  
+  # Show next steps
+  echo
+  print_success "TermGPT initialization complete!"
+  echo
+  echo "Next steps:"
+  echo "  1. Add $(dirname "$0") to your PATH:"
+  echo "     export PATH=\"\$PATH:$(dirname "$0")\""
+  echo
+  echo "  2. Try it out:"
+  echo "     termgpt \"list all python files\""
+  echo
+  
+  if [ "$HEADLESS" -eq 0 ]; then
+    echo "For more options, run: termgpt init --help"
+  fi
+}
+
+# Run main function
+main

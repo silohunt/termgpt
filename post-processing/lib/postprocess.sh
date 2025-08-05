@@ -79,7 +79,7 @@ apply_all_corrections() {
     
     # 2. Semantic corrections (now context-aware)
     command=$(apply_time_corrections "$command")
-    command=$(apply_file_corrections "$command")
+    command=$(apply_file_corrections "$command" "$original_query")
     
     # 3. Platform-specific corrections
     case "$platform" in
@@ -142,7 +142,7 @@ list_corrections() {
         command="$time_corrected"
     fi
     
-    local file_corrected=$(apply_file_corrections "$command")
+    local file_corrected=$(apply_file_corrections "$command" "$original_query")
     if [ "$command" != "$file_corrected" ]; then
         corrections="${corrections}files "
         command="$file_corrected"

@@ -27,6 +27,6 @@ USER testuser
 WORKDIR /home/testuser/termgpt
 
 # Make scripts executable
-RUN chmod +x bin/termgpt bin/termgpt-history setup.sh uninstall.sh tests/*.sh
+RUN chmod +x bin/termgpt bin/termgpt-init bin/termgpt-history tests/*.sh
 
 CMD ["/bin/sh"]

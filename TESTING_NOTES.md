@@ -31,6 +31,36 @@ cd tests/evaluation
 - **Complex Multi-step Operations**: 87-93% success rate
 - **Extreme Edge Cases**: 80-85% success rate (acceptable boundary)
 
+## Installation & Setup Testing
+
+### Init Command Testing
+TermGPT uses `termgpt init` for setup and configuration. Test scenarios:
+
+**Basic Installation**:
+```bash
+git clone https://github.com/silohunt/termgpt.git
+cd termgpt
+./bin/termgpt init                    # Interactive setup
+./bin/termgpt init --headless         # Non-interactive
+./bin/termgpt init --check            # Verify installation
+```
+
+**Advanced Configuration**:
+```bash  
+./bin/termgpt init --model codellama:13b     # Custom model
+./bin/termgpt init --path ~/.termgpt         # Custom config path
+./bin/termgpt init --reconfigure             # Update existing setup
+./bin/termgpt init --force                   # Re-download everything
+```
+
+**Expected Behaviors**:
+- ✅ Platform detection (macOS, Linux, WSL)
+- ✅ Dependency installation (jq, curl, Ollama)
+- ✅ Model download with progress indication
+- ✅ Configuration file creation
+- ✅ Tool detection (clipboard, URL handlers)
+- ✅ Health check validation
+
 ### Evaluation Features
 - **Non-Interactive Mode**: Use `--eval` flag for automated testing
 - **Baseline Comparison**: Set `TERMGPT_DISABLE_POSTPROCESSING=1` to test LLM-only performance

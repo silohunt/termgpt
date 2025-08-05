@@ -4,6 +4,7 @@
 
 apply_file_corrections() {
     local command="$1"
+    local original_query="${2:-}"
     
     # Add .log filter for log-related operations
     if printf '%s' "$command" | grep -q 'find.*-type f' && ! printf '%s' "$command" | grep -q '\.log'; then
@@ -26,6 +27,48 @@ apply_file_corrections() {
             command=$(printf '%s\n' "$command" | sed 's|find \. |find /var/log |')
             ;;
     esac
+    
+    # Smart scope correction for find commands
+    # Prevents overly broad filesystem searches when user likely wants local scope
+    if printf '%s' "$command" | grep -q '^find /'; then
+        # Check if user explicitly wants system-wide search
+        if [ -n "$original_query" ] && printf '%s' "$original_query" | /usr/bin/grep -qiE "(system|entire|everywhere|all.*system|search.*system|system.*search)"; then
+            # User explicitly wants system-wide search, keep find /
+            :
+        else
+            # Check for file extension patterns that suggest local project search
+            case "$command" in
+                *"find / "*"-name \"*."*"\""*|*"find / "*"-name '*."*"'"*)
+                    # File extension search like *.py, *.js, *.txt - likely wants current directory
+                    command=$(printf '%s\n' "$command" | sed 's|find /|find .|')
+                    ;;
+                *"find / "*"python"*|*"find / "*"*.py"*)
+                    # Python file search - likely wants current project
+                    command=$(printf '%s\n' "$command" | sed 's|find /|find .|')
+                    ;;
+                *"find / "*"*.js"*|*"find / "*"javascript"*)
+                    # JavaScript file search - likely wants current project
+                    command=$(printf '%s\n' "$command" | sed 's|find /|find .|')
+                    ;;
+                *"find / "*"*.java"*|*"find / "*"*.class"*)
+                    # Java file search - likely wants current project
+                    command=$(printf '%s\n' "$command" | sed 's|find /|find .|')
+                    ;;
+                *"find / "*"*.c"*|*"find / "*"*.cpp"*|*"find / "*"*.h"*)
+                    # C/C++ file search - likely wants current project
+                    command=$(printf '%s\n' "$command" | sed 's|find /|find .|')
+                    ;;
+                *"find / "*"*.go"*|*"find / "*"*.rs"*|*"find / "*"*.rb"*)
+                    # Go/Rust/Ruby file search - likely wants current project
+                    command=$(printf '%s\n' "$command" | sed 's|find /|find .|')
+                    ;;
+                *"find / "*"*.md"*|*"find / "*"*.txt"*|*"find / "*"*.json"*)
+                    # Documentation/data files - likely wants current project
+                    command=$(printf '%s\n' "$command" | sed 's|find /|find .|')
+                    ;;
+            esac
+        fi
+    fi
     
     # Add backup file exclusions
     case "$command" in

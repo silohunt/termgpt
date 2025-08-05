@@ -101,6 +101,38 @@ cat file.txt | xclip -selection clipboard
 
 ## File Pattern Corrections
 
+### Smart Scope Correction
+
+**User Query**: "list all python files"
+
+**LLM Output**: 
+```bash
+find / -name "*.py"  # Searches entire filesystem!
+```
+
+**Issues**:
+- Scans entire filesystem (slow, permission errors)
+- Not what user typically wants for project files
+
+**Corrected**:
+```bash
+find . -name "*.py"  # Searches current directory
+```
+
+**Context-Aware**: Preserves system searches when appropriate
+
+**User Query**: "search the entire system for config files"
+
+**LLM Output**: 
+```bash
+find / -name "*.conf"
+```
+
+**Preserved** (user explicitly wants system search):
+```bash
+find / -name "*.conf"  # Kept as-is
+```
+
 ### Log Compression
 
 **User Query**: "compress old log files"

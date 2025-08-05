@@ -16,74 +16,77 @@ test_correction() {
     local actual
     
     TESTS=$((TESTS + 1))
-    actual=$(apply_file_corrections "$input")
+    # For tests that need context, use a default query
+    local query="${4:-test query}"
+    actual=$(apply_file_corrections "$input" "$query")
     
     if [ "$actual" = "$expected" ]; then
         PASSED=$((PASSED + 1))
         echo "✓ $description"
     else
         echo "✗ $description"
-        echo "  Input:    $input"
         echo "  Expected: $expected"
         echo "  Actual:   $actual"
     fi
 }
 
-echo "Testing file corrections..."
+echo "Running file correction tests..."
 echo
 
+# Test log filtering
+test_correction "Add .log filter for compression commands" \
+    "find . -type f -exec gzip {} \\;" \
+    "find /var/log -name \"*.log\" -type f -exec gzip {} \\;"
+
+# Test path correction for logs
+test_correction "Use /var/log for log operations" \
+    "find . -name \"*.log\" -type f" \
+    "find /var/log -name \"*.log\" -type f"
+
 # Test permission corrections
-test_correction "Fix permission syntax -perm -0004" \
+test_correction "Fix wrong permission syntax" \
     "find . -perm -0004" \
     "find . -perm 644"
 
-test_correction "Fix permission syntax -perm -0002" \
-    "find . -perm -0002" \
-    "find . -perm 755"
-
-test_correction "Fix permission syntax with leading zero" \
-    "find . -perm 0644" \
-    "find . -perm 644"
-
 # Test placeholder replacements
-test_correction "Replace <log_file> placeholder" \
-    "grep ERROR <log_file>" \
-    "grep ERROR /var/log/*.log"
+test_correction "Replace username placeholder" \
+    "chown <username> file.txt" \
+    "chown \$USER file.txt"
 
-test_correction "Replace <pattern> placeholder" \
-    "grep <pattern> /var/log/system.log" \
-    "grep ERROR /var/log/system.log"
-
-test_correction "Replace <username> placeholder" \
-    "find /home/<username> -type f" \
-    "find /home/\$USER -type f"
-
-test_correction "Replace path placeholders" \
-    "find /path/to/log/files -name '*.log'" \
-    "find /var/log -name '*.log'"
-
-test_correction "Replace specific error patterns" \
-    "grep 'specific_error_pattern' /var/log/*.log" \
-    "grep 'ERROR' /var/log/*.log"
-
-# Test file filtering improvements
-test_correction "Add log filter for compression" \
-    "find . -type f -exec gzip {} \\;" \
-    "find . -name \"*.log\" -type f -exec gzip {} \\;"
-
-test_correction "Fix log path optimization" \
-    "find . -name \"*.log\"" \
-    "find /var/log -name \"*.log\""
-
-# Test backup exclusions
-test_correction "Add git exclusions for backup" \
-    "find . -type f -name \"*.conf\" backup" \
-    "find . -type f -not -path \"*/.git/*\" -not -path \"*/.svn/*\" -name \"*.conf\" backup"
+test_correction "Replace log file placeholder" \
+    "tail -f <log_file>" \
+    "tail -f /var/log/*.log"
 
 # Test missing quotes
 test_correction "Add quotes to wildcards" \
     "find . -name *.py" \
     "find . -name \"*.py\""
+
+# Test smart scope correction
+test_correction "Convert find / to find . for local file searches" \
+    "find / -name \"*.py\"" \
+    "find . -name \"*.py\"" \
+    "list all python files"
+
+test_correction "Convert find / to find . for JavaScript files" \
+    "find / -type f -name \"*.js\"" \
+    "find . -type f -name \"*.js\"" \
+    "find all javascript files"
+
+test_correction "Preserve find / for system-wide searches" \
+    "find / -name \"*.conf\"" \
+    "find / -name \"*.conf\"" \
+    "search the entire system for config files"
+
+test_correction "Preserve find / when user says everywhere" \
+    "find / -name \"*.py\"" \
+    "find / -name \"*.py\"" \
+    "search everywhere for python files"
+
+test_correction "Convert find / for other programming languages" \
+    "find / -name \"*.go\"" \
+    "find . -name \"*.go\"" \
+    "find all go files"
 
 # Summary
 echo

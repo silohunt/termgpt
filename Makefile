@@ -25,7 +25,7 @@ all:
 	@echo "  test-eval     Run evaluation tests (requires installation)"
 	@echo "  clean         Clean temporary files"
 	@echo ""
-	@echo "For advanced uninstall options, run: ./uninstall.sh --help"
+	@echo "For uninstallation, run: make uninstall"
 
 # System-wide installation
 install:
@@ -39,6 +39,7 @@ install:
 	install -d $(DOCDIR)
 	install -d $(MANDIR)
 	install -m 755 bin/termgpt $(BINDIR)/
+	install -m 755 bin/termgpt-init $(BINDIR)/
 	install -m 755 bin/termgpt-history $(BINDIR)/
 	install -m 644 lib/termgpt-check.sh $(LIBDIR)/
 	install -m 644 lib/termgpt-platform.sh $(LIBDIR)/
@@ -69,21 +70,18 @@ install-user:
 	@echo "Add $(PWD)/bin to your PATH:"
 	@echo "  export PATH=\"\$$PATH:$(PWD)/bin\""
 
-# Uninstall (use dedicated script for comprehensive removal)
+# Uninstall
 uninstall:
-	@echo "Using comprehensive uninstaller..."
-	@if [ -f ./uninstall.sh ]; then \
-		./uninstall.sh; \
-	else \
-		echo "Manual removal from $(PREFIX):"; \
-		rm -f $(BINDIR)/termgpt; \
-		rm -f $(BINDIR)/termgpt-history; \
-		rm -rf $(LIBDIR); \
-		rm -rf $(SHAREDIR); \
-		rm -rf $(DOCDIR); \
-		rm -f $(MANDIR)/termgpt.1; \
-		echo "Manual uninstall complete!"; \
-	fi
+	@echo "Removing TermGPT from $(PREFIX)..."
+	rm -f $(BINDIR)/termgpt
+	rm -f $(BINDIR)/termgpt-init
+	rm -f $(BINDIR)/termgpt-history
+	rm -rf $(LIBDIR)
+	rm -rf $(SHAREDIR)
+	rm -rf $(DOCDIR)
+	rm -f $(MANDIR)/termgpt.1
+	@echo "TermGPT uninstalled successfully!"
+	@echo "Note: User config (~/.config/termgpt) was not removed"
 
 # Run tests
 test:

@@ -15,6 +15,9 @@ termgpt \- platform-aware natural language to POSIX shell command converter
 .B termgpt
 .RB [ --eval ]
 .I "natural language request"
+.br
+.B termgpt init
+.RB [ options ]
 .SH DESCRIPTION
 .B termgpt
 translates natural language descriptions into POSIX-compliant shell commands
@@ -46,6 +49,31 @@ without presenting the interactive menu. Used for testing and automation.
 .TP
 .I "natural language request"
 The natural language description of the desired shell command
+.SH INITIALIZATION
+.B termgpt init
+initializes and configures TermGPT on your system. It automatically detects
+your platform, installs dependencies, downloads LLM models, and creates
+configuration files.
+.PP
+.B Init options:
+.TP
+.BR --headless
+Non-interactive mode using all defaults
+.TP
+.BR --model " MODEL"
+Specify LLM model (default: codellama:7b-instruct)
+.TP
+.BR --path " PATH"
+Override config path (default: ~/.config/termgpt)
+.TP
+.BR --reconfigure
+Update existing configuration
+.TP
+.BR --check
+Verify installation without making changes
+.TP
+.BR --force
+Force re-download of models and dependencies
 .SH INTERACTIVE MENU
 After generating a command, termgpt presents an interactive menu with the
 following options:
@@ -126,6 +154,15 @@ Override the default LLM model (default: codellama:7b-instruct)
 Set to "1" to disable the post-processing pipeline, useful for evaluation
 and testing purposes to compare raw LLM output with enhanced results
 .SH EXAMPLES
+.TP
+Initialize TermGPT with default settings:
+.B termgpt init
+.TP
+Initialize with specific model:
+.B termgpt init --model codellama:13b
+.TP
+Check installation status:
+.B termgpt init --check
 .TP
 Generate a command to list all Python files:
 .B termgpt "list all python files"

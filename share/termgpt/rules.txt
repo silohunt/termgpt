@@ -128,7 +128,7 @@
 [MEDIUM] systemctl[[:space:]]+(stop|disable|mask)[[:space:]]+\S+
 [MEDIUM] systemctl[[:space:]]+restart[[:space:]]+(sshd|network|firewalld|iptables)
 [MEDIUM] git[[:space:]]+clone[[:space:]]+(https?|ssh)://.*\.git[[:space:]]*&&[[:space:]]*make[[:space:]]+install
-[MEDIUM] git[[:space:]]+clone[[:space:]]+(https?|ssh)://.*\.git[[:space:]]*&&[[:space:]]*bash[[:space:]]+setup.sh
+[MEDIUM] git[[:space:]]+clone[[:space:]]+(https?|ssh)://.*\.git[[:space:]]*&&[[:space:]]*bash[[:space:]]+.*\.sh
 [MEDIUM] cp[[:space:]]+-r[[:space:]]+/.*  
 [MEDIUM] mv[[:space:]]+.*[[:space:]]+/.*  
 [MEDIUM] \|\|[[:space:]]*sh[[:space:]]+-c[[:space:]]+  

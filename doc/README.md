@@ -37,16 +37,15 @@ TermGPT supports multiple installation methods to accommodate different use case
 
 ### Automatic Setup (Recommended)
 
-The setup script automatically detects your platform and configures everything:
+The init command automatically detects your platform and configures everything:
 
 ```bash
 git clone https://github.com/silohunt/termgpt.git
 cd termgpt
-chmod +x setup.sh
-./setup.sh
+./bin/termgpt init
 ```
 
-The setup process:
+The initialization process:
 1. **Platform Detection**: Identifies your OS (macOS/Linux) and architecture
 2. **Dependency Installation**: Installs jq, curl, and platform-specific tools
 3. **Ollama Setup**: Downloads and configures Ollama LLM server
@@ -210,7 +209,7 @@ termgpt "open current directory in file manager"
 TermGPT automatically creates platform-specific configuration:
 - **Location**: `~/.config/termgpt/platform.conf`
 - **Content**: Detected OS, tools, and optimizations
-- **Regeneration**: Run `./setup.sh` again to update
+- **Regeneration**: Run `termgpt init --reconfigure` to update
 
 ### Custom Rules
 
