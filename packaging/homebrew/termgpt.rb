@@ -4,7 +4,7 @@ class Termgpt < Formula
   url "https://github.com/silohunt/termgpt/archive/v0.8.0.tar.gz"
   sha256 "aeec973e0d5fd69d6c8487c58847f70a84d34aaf03c7758e1cb710b717be5644"
   license "MIT"
-  version "0.8.0"
+  version "0.9.0"
 
   depends_on "jq"
   depends_on "curl"
