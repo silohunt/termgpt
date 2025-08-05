@@ -47,6 +47,17 @@ cd termgpt
 
 ## Installation
 
+### Homebrew (Recommended)
+
+```bash
+# Add the TermGPT tap (once published)
+brew tap silohunt/termgpt
+brew install termgpt
+
+# Initialize TermGPT
+termgpt init
+```
+
 ### Quick Install from GitHub
 ```bash
 # Clone the repository
