@@ -54,12 +54,12 @@ test_command() {
     # Test LLM baseline (without post-processing)
     export TERMGPT_DISABLE_POSTPROCESSING=1
     llm_output=$(../../bin/termgpt --eval "$query" 2>&1 || echo "TIMEOUT_OR_ERROR")
-    llm_result=$(echo "$llm_output" | grep -A1 "Generated Command:" | tail -1 | xargs)
+    llm_result=$(echo "$llm_output" | grep -A1 "Generated Command:" | tail -1 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
     unset TERMGPT_DISABLE_POSTPROCESSING
     
     # Test with post-processing
     postproc_output=$(../../bin/termgpt --eval "$query" 2>&1 || echo "TIMEOUT_OR_ERROR")
-    postproc_result=$(echo "$postproc_output" | grep -A1 "Generated Command:" | tail -1 | xargs)
+    postproc_result=$(echo "$postproc_output" | grep -A1 "Generated Command:" | tail -1 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
     
     # Basic validation - check if result looks like a valid command
     llm_valid=0
