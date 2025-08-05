@@ -285,7 +285,7 @@ cd tests/evaluation && ./run_comprehensive_evaluation.sh
 - **Complex Edge Cases**: 80-93% success rate
 - **Overall Performance**: 85-95% depending on command complexity
 
-See `tests/evaluation/README.md` for detailed testing documentation.
+See `tests/README.md` for detailed testing documentation.
 
 ## Documentation
 

@@ -26,12 +26,11 @@ All contributions must be submitted via pull request. Direct commits to the main
 
 4. **Test your changes**
    ```bash
-   # Run the test suite
-   ./tests/termgpt-test.sh
+   # Run unit tests
+   for test in tests/unit/*.sh; do bash "$test"; done
    
-   # Test in Docker if making cross-platform changes
-   docker build -f test/Dockerfile.alpine-local -t termgpt-test .
-   docker run -it --rm termgpt-test ./test/test-in-container.sh
+   # Run evaluation tests
+   cd tests/evaluation && ./run_focused_evaluation.sh
    ```
 
 5. **Commit your changes**
