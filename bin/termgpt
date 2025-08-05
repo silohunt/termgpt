@@ -31,6 +31,10 @@ if [ "$#" -ge 1 ]; then
       shift
       exec "$(dirname "$0")/termgpt-init" "$@"
       ;;
+    shell)
+      shift
+      exec "$(dirname "$0")/termgpt-shell" "$@"
+      ;;
     
     # Version flags
     --version|-V)
@@ -57,6 +61,7 @@ if [ "$#" -ge 1 ]; then
       echo "Usage:"
       echo "  termgpt <request>              Generate a shell command from natural language"
       echo "  termgpt init [options]         Initialize and configure TermGPT"
+      echo "  termgpt shell [options]        Start interactive REPL mode"
       echo ""
       echo "Options:"
       echo "  --version, -V                  Show version information"
@@ -68,6 +73,7 @@ if [ "$#" -ge 1 ]; then
       echo "  termgpt \"list all python files\""
       echo "  termgpt \"find files larger than 100MB\""
       echo "  termgpt init --model codellama:13b"
+      echo "  termgpt shell --model codellama:13b"
       echo ""
       echo "For more information, visit: https://github.com/silohunt/termgpt"
       exit 0

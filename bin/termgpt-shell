@@ -1,0 +1,557 @@
+#!/bin/sh
+#
+# termgpt-shell - Interactive REPL for TermGPT
+#
+# Provides a persistent interactive shell session that maintains context
+# and provides command-line tools for iterative development.
+#
+# Usage: termgpt-shell [options]
+#
+# Options:
+#   --model MODEL     Use specific model
+#   --history         Show session history on start
+#   --help           Show help message
+#
+
+set -eu
+
+VERSION="0.8.0"
+SCRIPT_DIR="$(dirname "$0")"
+
+# REPL state
+LAST_COMMAND=""
+LAST_QUERY=""
+LAST_SAFETY_LEVEL=""
+SESSION_ID=""
+SESSION_START=""
+COMMAND_COUNTER=0
+
+# Session storage
+SESSION_DIR="$HOME/.config/termgpt/sessions"
+ALIASES_FILE="$HOME/.config/termgpt/aliases.conf"
+CURRENT_SESSION_FILE=""
+
+# Initialize session storage and history integration
+init_session_storage() {
+  if [ ! -d "$SESSION_DIR" ]; then
+    mkdir -p "$SESSION_DIR" 2>/dev/null || {
+      echo "Warning: Could not create session directory: $SESSION_DIR"
+      SESSION_DIR="/tmp/termgpt-sessions"
+      mkdir -p "$SESSION_DIR" 2>/dev/null || return 1
+    }
+  fi
+  
+  SESSION_ID="$(date +%s)-$$"
+  SESSION_START="$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u)"
+  CURRENT_SESSION_FILE="$SESSION_DIR/session-$SESSION_ID.json"
+  
+  # Initialize session file
+  cat > "$CURRENT_SESSION_FILE" << EOF
+{
+  "session_id": "$SESSION_ID",
+  "start_time": "$SESSION_START",
+  "version": "$VERSION",
+  "commands": [],
+  "aliases": {}
+}
+EOF
+
+  # Initialize termgpt history system
+  find_history_lib() {
+    if [ -f "$SCRIPT_DIR/../lib/termgpt-history.sh" ]; then
+      echo "$SCRIPT_DIR/../lib/termgpt-history.sh"
+    elif [ -f "/usr/local/lib/termgpt/termgpt-history.sh" ]; then
+      echo "/usr/local/lib/termgpt/termgpt-history.sh"
+    elif [ -f "/usr/lib/termgpt/termgpt-history.sh" ]; then
+      echo "/usr/lib/termgpt/termgpt-history.sh"
+    elif [ -f "$HOME/.config/termgpt/lib/termgpt-history.sh" ]; then
+      echo "$HOME/.config/termgpt/lib/termgpt-history.sh"
+    else
+      return 1
+    fi
+  }
+
+  HISTORY_LIB=$(find_history_lib)
+  if [ -n "$HISTORY_LIB" ] && [ -r "$HISTORY_LIB" ] && [ -f "$HISTORY_LIB" ]; then
+    . "$HISTORY_LIB"
+    init_history
+    export TERMGPT_SESSION_ID="$SESSION_ID"
+  fi
+}
+
+# Load aliases
+load_aliases() {
+  if [ -f "$ALIASES_FILE" ]; then
+    . "$ALIASES_FILE" 2>/dev/null || true
+  fi
+}
+
+# Save alias
+save_alias() {
+  alias_name="$1"
+  alias_command="$2"
+  
+  # Create aliases file if it doesn't exist
+  if [ ! -f "$ALIASES_FILE" ]; then
+    touch "$ALIASES_FILE"
+  fi
+  
+  # Remove existing alias if it exists
+  if grep -q "^ALIAS_$alias_name=" "$ALIASES_FILE" 2>/dev/null; then
+    sed -i.bak "/^ALIAS_$alias_name=/d" "$ALIASES_FILE"
+  fi
+  
+  # Add new alias
+  echo "ALIAS_$alias_name=\"$alias_command\"" >> "$ALIASES_FILE"
+  echo "✓ Saved alias '$alias_name'"
+}
+
+# Show aliases
+show_aliases() {
+  if [ ! -f "$ALIASES_FILE" ]; then
+    echo "No aliases defined"
+    return 0
+  fi
+  
+  echo "Defined aliases:"
+  grep "^ALIAS_" "$ALIASES_FILE" 2>/dev/null | while read -r line; do
+    alias_name=$(echo "$line" | sed 's/^ALIAS_\([^=]*\)=.*/\1/')
+    alias_cmd=$(echo "$line" | sed 's/^ALIAS_[^=]*="\(.*\)"$/\1/')
+    printf "  %-15s %s\n" "$alias_name" "$alias_cmd"
+  done
+}
+
+# Add command to session history
+add_to_session() {
+  query="$1"
+  command="$2"
+  action="${3:-generated}"
+  
+  COMMAND_COUNTER=$((COMMAND_COUNTER + 1))
+  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u)"
+  
+  # Create a temporary file for jq processing
+  temp_file=$(mktemp)
+  
+  # Add the new command entry
+  jq --arg id "$COMMAND_COUNTER" \
+     --arg query "$query" \
+     --arg command "$command" \
+     --arg action "$action" \
+     --arg timestamp "$timestamp" \
+     '.commands += [{
+       "id": ($id | tonumber),
+       "query": $query,
+       "generated": $command,
+       "action": $action,
+       "timestamp": $timestamp
+     }]' "$CURRENT_SESSION_FILE" > "$temp_file" && mv "$temp_file" "$CURRENT_SESSION_FILE"
+}
+
+# Show session history
+show_session_history() {
+  limit="${1:-10}"
+  
+  if [ ! -f "$CURRENT_SESSION_FILE" ]; then
+    echo "No session history available"
+    return 0
+  fi
+  
+  echo "Recent commands (last $limit):"
+  jq -r --arg limit "$limit" '
+    .commands[-($limit | tonumber):] | 
+    reverse | 
+    .[] | 
+    "\(.id). \(.generated) (\(.action))"
+  ' "$CURRENT_SESSION_FILE" 2>/dev/null || echo "Error reading session history"
+}
+
+# Generate command using termgpt
+generate_command() {
+  query="$1"
+  
+  # Call the main termgpt script in eval mode
+  if ! command_output=$("$SCRIPT_DIR/termgpt" --eval "$query" 2>&1); then
+    echo "Error: Failed to generate command"
+    echo "$command_output"
+    return 1
+  fi
+  
+  # Extract the command from the output (skip the "Estimated prompt length" line)
+  command=$(echo "$command_output" | grep -v "Estimated prompt length:" | grep -v "^$" | tail -n 1)
+  
+  if [ -z "$command" ]; then
+    echo "Error: No command generated"
+    return 1
+  fi
+  
+  LAST_COMMAND="$command"
+  LAST_QUERY="$query"
+  LAST_SAFETY_LEVEL=""  # TODO: Extract safety level from output
+  
+  echo
+  echo "Generated: $command"
+  echo
+  echo "[c]opy  [e]xplain  [r]un  [s]ave  [n]ext"
+  echo
+  
+  add_to_session "$query" "$command" "generated"
+  return 0
+}
+
+# Handle dot commands
+handle_dot_command() {
+  cmd="$1"
+  
+  case "$cmd" in
+    .help|.h)
+      show_help
+      ;;
+    .quit|.exit|.q)
+      echo "✓ Session saved"
+      exit 0
+      ;;
+    .clear|.cl)
+      clear
+      show_banner
+      ;;
+    .history|.hist)
+      show_session_history "${2:-10}"
+      ;;
+    .model)
+      if [ -n "${2:-}" ]; then
+        echo "Model switching not implemented yet"
+      else
+        # Show current model by calling termgpt -m
+        "$SCRIPT_DIR/termgpt" -m
+      fi
+      ;;
+    .config)
+      echo "Current configuration:"
+      echo "  Session ID: $SESSION_ID"
+      echo "  Started: $SESSION_START"
+      echo "  Commands: $COMMAND_COUNTER"
+      "$SCRIPT_DIR/termgpt" -m
+      ;;
+    .stats)
+      show_session_stats
+      ;;
+    .aliases)
+      show_aliases
+      ;;
+    .copy|.c)
+      if [ -n "$LAST_COMMAND" ]; then
+        copy_command "$LAST_COMMAND"
+        add_to_session "$LAST_QUERY" "$LAST_COMMAND" "copied"
+        # Also log to main termgpt history
+        if command -v log_interaction >/dev/null 2>&1; then
+          log_interaction "$LAST_QUERY" "$LAST_COMMAND" "$LAST_SAFETY_LEVEL" "copied"
+        fi
+      else
+        echo "No command to copy"
+      fi
+      ;;
+    .explain|.e)
+      if [ -n "$LAST_COMMAND" ]; then
+        explain_command "$LAST_COMMAND"
+        add_to_session "$LAST_QUERY" "$LAST_COMMAND" "explained"
+        # Also log to main termgpt history
+        if command -v log_interaction >/dev/null 2>&1; then
+          log_interaction "$LAST_QUERY" "$LAST_COMMAND" "$LAST_SAFETY_LEVEL" "explained"
+        fi
+      else
+        echo "No command to explain"
+      fi
+      ;;
+    .run|.r)
+      if [ -n "$LAST_COMMAND" ]; then
+        run_command "$LAST_COMMAND"
+        add_to_session "$LAST_QUERY" "$LAST_COMMAND" "executed"
+        # Also log to main termgpt history
+        if command -v log_interaction >/dev/null 2>&1; then
+          log_interaction "$LAST_QUERY" "$LAST_COMMAND" "$LAST_SAFETY_LEVEL" "executed"
+        fi
+      else
+        echo "No command to run"
+      fi
+      ;;
+    .save|.s)
+      if [ -n "$LAST_COMMAND" ]; then
+        save_name="${2:-cmd$COMMAND_COUNTER}"
+        save_alias "$save_name" "$LAST_COMMAND"
+        add_to_session "$LAST_QUERY" "$LAST_COMMAND" "saved as $save_name"
+        # Also log to main termgpt history
+        if command -v log_interaction >/dev/null 2>&1; then
+          log_interaction "$LAST_QUERY" "$LAST_COMMAND" "$LAST_SAFETY_LEVEL" "saved as $save_name"
+        fi
+      else
+        echo "No command to save"
+      fi
+      ;;
+    .export)
+      export_session "${2:-session.json}"
+      ;;
+    .debug)
+      case "${2:-}" in
+        on) echo "Debug mode: ON" ;;
+        off) echo "Debug mode: OFF" ;;
+        *) echo "Debug mode: ${DEBUG:-OFF}" ;;
+      esac
+      ;;
+    *)
+      echo "Unknown command: $cmd"
+      echo "Type .help for available commands"
+      ;;
+  esac
+}
+
+# Copy command to clipboard
+copy_command() {
+  command="$1"
+  
+  # Use the same clipboard logic as main termgpt script
+  CLIPBOARD_CMD=""
+  if command -v pbcopy >/dev/null 2>&1; then
+    CLIPBOARD_CMD="pbcopy"
+  elif command -v xclip >/dev/null 2>&1; then
+    CLIPBOARD_CMD="xclip -selection clipboard"
+  elif command -v xsel >/dev/null 2>&1; then
+    CLIPBOARD_CMD="xsel --clipboard --input"
+  elif command -v wl-copy >/dev/null 2>&1; then
+    CLIPBOARD_CMD="wl-copy"
+  fi
+  
+  if [ -n "$CLIPBOARD_CMD" ]; then
+    if echo "$command" | eval "$CLIPBOARD_CMD"; then
+      echo "✓ Copied to clipboard"
+    else
+      echo "✗ Failed to copy to clipboard"
+    fi
+  else
+    echo "No clipboard tool available"
+    echo "Command: $command"
+  fi
+}
+
+# Explain command
+explain_command() {
+  command="$1"
+  
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "Python3 required for URL encoding"
+    return 1
+  fi
+  
+  if [ ${#command} -gt 1000 ]; then
+    echo "Command too long for explainshell (max 1000 chars)"
+    return 1  
+  fi
+  
+  encoded=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$command")
+  url="https://explainshell.com/explain?cmd=$encoded"
+  
+  if [ "$(uname)" = "Darwin" ]; then
+    open "$url" && echo "✓ Opened in browser"
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$url" && echo "✓ Opened in browser"
+  else
+    echo "No URL opener available"
+    echo "Visit: $url"
+  fi
+}
+
+# Run command with confirmation
+run_command() {
+  command="$1"
+  
+  echo "Preview: $command"
+  printf "Continue? [y/N] "
+  read -r confirm
+  
+  case "$confirm" in
+    [Yy]|[Yy][Ee][Ss])
+      echo "Running command..."
+      if eval "$command"; then
+        echo "✓ Command completed"
+      else
+        echo "✗ Command failed with exit code $?"
+      fi
+      ;;
+    *)
+      echo "Command cancelled"
+      ;;
+  esac
+}
+
+# Export session
+export_session() {
+  output_file="$1"
+  
+  if [ -f "$CURRENT_SESSION_FILE" ]; then
+    cp "$CURRENT_SESSION_FILE" "$output_file"
+    echo "✓ Session exported to: $output_file"
+  else
+    echo "No session to export"
+  fi
+}
+
+# Show session statistics
+show_session_stats() {
+  if [ ! -f "$CURRENT_SESSION_FILE" ]; then
+    echo "No session data available"
+    return 0
+  fi
+  
+  echo "Session Statistics:"
+  echo "  Session ID: $SESSION_ID"
+  echo "  Started: $SESSION_START"
+  echo "  Commands generated: $COMMAND_COUNTER"
+  
+  if command -v jq >/dev/null 2>&1; then
+    actions=$(jq -r '.commands[].action' "$CURRENT_SESSION_FILE" 2>/dev/null | sort | uniq -c | sort -nr)
+    if [ -n "$actions" ]; then
+      echo "  Actions taken:"
+      echo "$actions" | sed 's/^/    /'
+    fi
+  fi
+}
+
+# Show help
+show_help() {
+  cat << 'EOF'
+TermGPT Interactive Shell - Available Commands:
+
+Generation Commands:
+  <natural language>    Generate shell command from description
+
+Dot Commands (REPL Control):
+  .help, .h            Show this help message
+  .quit, .exit, .q     Exit the REPL
+  .clear, .cl          Clear screen
+  .history [n]         Show last n commands (default 10)
+  .model [name]        Show current model or switch model
+  .config              Show current configuration
+  .stats               Show session statistics
+  .aliases             List saved command aliases
+  .debug [on/off]      Toggle debug mode
+  .export [file]       Export session to file
+
+Action Commands (for last generated command):
+  .copy, .c            Copy command to clipboard
+  .explain, .e         Open command explanation in browser
+  .run, .r             Execute command (with confirmation)
+  .save [name], .s     Save command as alias
+
+Examples:
+  termgpt> find large files
+  termgpt> .copy
+  termgpt> compress those files  
+  termgpt> .save compress-large
+  termgpt> .history 5
+
+EOF
+}
+
+# Show banner
+show_banner() {
+  model="${MODEL:-codellama:7b-instruct}"
+  echo "TermGPT v$VERSION ($model) - Interactive Mode"
+  echo "Type .help for commands, .quit to exit"
+  echo
+}
+
+# Main REPL loop
+main_loop() {
+  while true; do
+    printf "termgpt> "
+    
+    # Read input with basic line editing support
+    read -r input || {
+      echo  # Add newline after Ctrl+C/Ctrl+D
+      echo "✓ Session saved"
+      exit 0
+    }
+    
+    # Skip empty input
+    if [ -z "$input" ]; then
+      continue
+    fi
+    
+    # Handle dot commands and single-letter shortcuts
+    if echo "$input" | grep -q "^\."; then
+      # Split command and arguments
+      cmd=$(echo "$input" | cut -d' ' -f1)
+      args=$(echo "$input" | cut -s -d' ' -f2-)
+      handle_dot_command "$cmd" $args
+    elif [ ${#input} -eq 1 ] && [ -n "$LAST_COMMAND" ]; then
+      # Handle single-letter shortcuts for last command
+      case "$input" in
+        c) handle_dot_command ".copy" ;;
+        e) handle_dot_command ".explain" ;;
+        r) handle_dot_command ".run" ;;
+        s) handle_dot_command ".save" ;;
+        q) handle_dot_command ".quit" ;;
+        h) handle_dot_command ".help" ;;
+        *) generate_command "$input" ;;
+      esac
+    else
+      # Generate command from natural language
+      generate_command "$input"
+    fi
+    
+    echo
+  done
+}
+
+# Parse command line arguments
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --model)
+      if [ -n "${2:-}" ]; then
+        export TERMGPT_MODEL="$2"
+        shift 2
+      else
+        echo "Error: --model requires a model name"
+        exit 1
+      fi
+      ;;
+    --history)
+      SHOW_HISTORY_ON_START=1
+      shift
+      ;;
+    --help|-h)
+      echo "TermGPT Interactive Shell"
+      echo ""
+      echo "Usage: termgpt-shell [options]"
+      echo ""
+      echo "Options:"
+      echo "  --model MODEL     Use specific model"
+      echo "  --history         Show session history on start"
+      echo "  --help, -h        Show this help message"
+      echo ""
+      echo "Once in the shell, type .help for available commands"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+# Initialize and start REPL
+init_session_storage
+load_aliases
+
+show_banner
+
+if [ "${SHOW_HISTORY_ON_START:-0}" -eq 1 ]; then
+  show_session_history 5
+  echo
+fi
+
+# Trap Ctrl+C to save session gracefully
+trap 'echo ""; echo "✓ Session saved"; exit 0' INT
+
+main_loop

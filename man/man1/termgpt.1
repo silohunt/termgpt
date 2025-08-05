@@ -18,6 +18,9 @@ termgpt \- platform-aware natural language to POSIX shell command converter
 .br
 .B termgpt init
 .RB [ options ]
+.br
+.B termgpt shell
+.RB [ options ]
 .SH DESCRIPTION
 .B termgpt
 translates natural language descriptions into POSIX-compliant shell commands
@@ -74,6 +77,56 @@ Verify installation without making changes
 .TP
 .BR --force
 Force re-download of models and dependencies
+.SH INTERACTIVE SHELL
+.B termgpt shell
+starts an interactive REPL (Read-Eval-Print Loop) session for iterative
+command development. The shell provides persistent sessions, command history,
+and action shortcuts for enhanced productivity.
+.PP
+.B Shell options:
+.TP
+.BR --model " MODEL"
+Specify LLM model for the session
+.TP
+.BR --history
+Show recent session history on startup
+.PP
+.B Shell commands:
+.TP
+.I "natural language"
+Generate shell commands from natural language descriptions
+.TP
+.BR .help , .h
+Show available commands
+.TP
+.BR .quit , .exit , .q
+Exit the shell (saves session)
+.TP
+.BR .history " [N]"
+Show last N commands (default: 10)
+.TP
+.BR .copy , .c
+Copy last generated command to clipboard
+.TP
+.BR .explain , .e
+Open last generated command in explainshell.com
+.TP
+.BR .run , .r
+Execute last generated command (with confirmation)
+.TP
+.BR .save " [NAME]" , .s
+Save last generated command as an alias
+.TP
+.BR .aliases
+List all saved command aliases
+.TP
+.BR .stats
+Show session statistics
+.TP
+.BR .config
+Show current configuration
+.PP
+Single-letter shortcuts (c, e, r, s, q, h) work when a command has been generated.
 .SH INTERACTIVE MENU
 After generating a command, termgpt presents an interactive menu with the
 following options:

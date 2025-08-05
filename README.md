@@ -12,6 +12,7 @@ A platform-aware, POSIX-compliant shell tool that converts natural language to U
 - **Hardware Optimization**: GPU detection for smart model recommendations
 - **POSIX Compliant**: Runs on any Unix-like system
 - **Interactive Interface**: Review, copy, or explain commands before execution
+- **Interactive REPL Shell**: Persistent session for iterative command development
 
 ## Quick Start
 
@@ -25,6 +26,9 @@ cd termgpt
 ./bin/termgpt "copy all python files to clipboard"
 ./bin/termgpt "find files larger than 100MB"
 ./bin/termgpt "compress the docs folder"
+
+# Or use interactive shell mode
+./bin/termgpt shell
 ```
 
 ## Platform Features
@@ -167,6 +171,56 @@ termgpt --model
 termgpt
 ```
 
+### Interactive Shell Mode
+
+TermGPT includes a powerful REPL (Read-Eval-Print Loop) for iterative command development:
+
+```bash
+# Start interactive shell
+termgpt shell
+
+# Example session:
+$ termgpt shell
+TermGPT v0.8.0 (codellama:7b-instruct) - Interactive Mode
+Type .help for commands, .quit to exit
+
+termgpt> find large files
+Generated: find . -type f -size +100M
+
+[c]opy  [e]xplain  [r]un  [s]ave  [n]ext
+
+termgpt> c
+✓ Copied to clipboard
+
+termgpt> compress those files
+Generated: find . -type f -size +100M -exec gzip {} \;
+
+termgpt> s compress-large
+✓ Saved alias 'compress-large'
+
+termgpt> .history
+Recent commands (last 10):
+1. find . -type f -size +100M (copied)
+2. find . -type f -size +100M -exec gzip {} \; (saved as compress-large)
+
+termgpt> .quit
+✓ Session saved
+```
+
+#### Shell Features
+- **Persistent Sessions**: Each session is saved with command history
+- **Action Shortcuts**: Single-letter commands (`c` = copy, `e` = explain, `r` = run, `s` = save)
+- **Alias System**: Save frequently used commands with custom names
+- **Session Export**: Export sessions for analysis or sharing
+- **History Integration**: Integrates with main TermGPT history system
+
+#### Shell Commands
+- **Generation**: Type natural language to generate commands
+- **Actions**: `c` (copy), `e` (explain), `r` (run), `s` (save)
+- **Control**: `.help`, `.quit`, `.history`, `.config`, `.stats`, `.aliases`
+
+For detailed shell documentation, see `docs/shell-mode.md`.
+
 ### Advanced Features
 - **Safety Detection**: Automatically warns about dangerous commands
 - **Platform Optimization**: Commands optimized for your OS (macOS/Linux/WSL)
@@ -175,6 +229,7 @@ termgpt
 - **Context-Aware Processing**: Uses original query for semantic understanding
 - **Multiple Models**: Switch between different coding models
 - **History Tracking**: Local logging for training data (optional)
+- **Interactive REPL**: Persistent shell for iterative command development
 - **Comprehensive Testing**: Validated against 50+ complex scenarios across 5 categories
 
 ## How It Works

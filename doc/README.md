@@ -27,6 +27,7 @@ TermGPT bridges the gap between natural language and shell commands by leveragin
 
 ### Usability
 - **Interactive Menu**: Simple options to copy, explain, or dismiss generated commands
+- **Interactive REPL Shell**: Persistent session for iterative command development
 - **Clipboard Integration**: Platform-appropriate clipboard operations
 - **Web Integration**: Opens commands in explainshell.com for detailed explanations
 - **Cross-Platform**: Single codebase runs on macOS, Linux, BSD, and other Unix systems
