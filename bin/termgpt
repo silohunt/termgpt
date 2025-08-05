@@ -269,9 +269,46 @@ ${PLATFORM_CONTEXT}CRITICAL:
 Request: $USER_PROMPT"
 
 
-WORD_COUNT=$(echo "$PROMPT" | wc -w)
-TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
-echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens"
+# Accurate token counting using Python-based tokenizer
+find_token_counter() {
+  if [ -f "$(dirname "$0")/../lib/token-counter.py" ]; then
+    echo "$(dirname "$0")/../lib/token-counter.py"
+  elif [ -f "/usr/local/lib/termgpt/token-counter.py" ]; then
+    echo "/usr/local/lib/termgpt/token-counter.py"
+  elif [ -f "/usr/lib/termgpt/token-counter.py" ]; then
+    echo "/usr/lib/termgpt/token-counter.py"
+  elif [ -f "$HOME/.config/termgpt/lib/token-counter.py" ]; then
+    echo "$HOME/.config/termgpt/lib/token-counter.py"
+  else
+    return 1
+  fi
+}
+
+# Get accurate token count
+if command -v python3 >/dev/null 2>&1; then
+  TOKEN_COUNTER=$(find_token_counter)
+  if [ -n "$TOKEN_COUNTER" ] && [ -r "$TOKEN_COUNTER" ] && [ -f "$TOKEN_COUNTER" ]; then
+    TOKEN_ESTIMATE=$(python3 "$TOKEN_COUNTER" "$PROMPT" 2>/dev/null)
+    if [ -n "$TOKEN_ESTIMATE" ] && [ "$TOKEN_ESTIMATE" -gt 0 ] 2>/dev/null; then
+      echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens"
+    else
+      # Fallback to word count if Python tokenizer fails
+      WORD_COUNT=$(echo "$PROMPT" | wc -w)
+      TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
+      echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (fallback)"
+    fi
+  else
+    # Fallback to word count if tokenizer not found
+    WORD_COUNT=$(echo "$PROMPT" | wc -w)
+    TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
+    echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (fallback)"
+  fi
+else
+  # Fallback to word count if Python not available
+  WORD_COUNT=$(echo "$PROMPT" | wc -w)
+  TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
+  echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (no python3)"
+fi
 
 MAX_TOKENS=2000
 if [ "$TOKEN_ESTIMATE" -gt "$MAX_TOKENS" ]; then

@@ -230,14 +230,16 @@ For detailed shell documentation, see `docs/shell-mode.md`.
 - **Multiple Models**: Switch between different coding models
 - **History Tracking**: Local logging for training data (optional)
 - **Interactive REPL**: Persistent shell for iterative command development
+- **Accurate Token Counting**: Model-agnostic Python-based tokenization for precise context estimation
 - **Comprehensive Testing**: Validated against 50+ complex scenarios across 5 categories
 
 ## How It Works
 
 TermGPT uses a multi-layer approach to generate reliable commands:
 
-1. **LLM Generation**: Local model converts natural language to shell commands
-2. **Smart Post-Processing**: Intelligent correction pipeline with proven 95%+ success rate:
+1. **Context Analysis**: Python-based tokenizer provides accurate context length estimation for any LLM model
+2. **LLM Generation**: Local model converts natural language to shell commands
+3. **Smart Post-Processing**: Intelligent correction pipeline with proven 95%+ success rate:
    - **Complex Command Preservation**: Protects valid multi-step commands from over-correction
    - **Platform Compatibility**: Handles macOS/Linux differences (netstat flags, case sensitivity, tool availability)
    - **Context-Aware Corrections**: Uses original query for semantic understanding
@@ -245,8 +247,8 @@ TermGPT uses a multi-layer approach to generate reliable commands:
    - **File Pattern Enhancement**: Adds appropriate filters (`*.log` for log operations)
    - **Path Optimization**: Uses better default locations (`/var/log` for logs, system paths)
    - **Security Corrections**: Removes dangerous patterns while preserving functionality
-3. **Safety Validation**: 100+ patterns detect dangerous operations
-4. **User Review**: Interactive confirmation before execution
+4. **Safety Validation**: 100+ patterns detect dangerous operations
+5. **User Review**: Interactive confirmation before execution
 
 ### Example Improvements
 

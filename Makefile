@@ -40,10 +40,12 @@ install:
 	install -d $(MANDIR)
 	install -m 755 bin/termgpt $(BINDIR)/
 	install -m 755 bin/termgpt-init $(BINDIR)/
+	install -m 755 bin/termgpt-shell $(BINDIR)/
 	install -m 755 bin/termgpt-history $(BINDIR)/
 	install -m 644 lib/termgpt-check.sh $(LIBDIR)/
 	install -m 644 lib/termgpt-platform.sh $(LIBDIR)/
 	install -m 644 lib/termgpt-history.sh $(LIBDIR)/
+	install -m 755 lib/token-counter.py $(LIBDIR)/
 	install -m 644 post-processing/lib/postprocess.sh $(POSTPROCDIR)/lib/
 	install -m 644 post-processing/corrections/*.sh $(POSTPROCDIR)/corrections/
 	install -m 644 share/termgpt/rules.txt $(SHAREDIR)/
