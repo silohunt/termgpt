@@ -7,22 +7,12 @@ This directory contains comprehensive evaluation scripts and test data for measu
 ### Primary Evaluation Scripts
 - **`run_focused_evaluation.sh`** - Tests 10 representative practical commands (baseline measurement)
 - **`test_hardest_commands.sh`** - Tests 15 most challenging edge cases (performance limit testing)
-- **`test_critical_fixes.sh`** - Tests specific commands that determine 95% success rate achievement
-
-### Comprehensive Testing
 - **`run_comprehensive_evaluation.sh`** - Full 50-command test suite across all categories
-- **`run_evaluation.sh`** - Original 30-command evaluation framework
-
-### Utility Scripts
-- **`debug_inconsistency.sh`** - Debugs LLM non-determinism and command extraction issues
-- **`test_extraction_fix.sh`** - Tests command extraction from TermGPT output
-- **`fix_evaluation_extraction.sh`** - Fixes command extraction in evaluation scripts
 
 ## Test Data
 
 ### Command Sets
-- **`evaluation_50_commands.txt`** - 50 complex commands across 5 categories
-- **`evaluation_commands.txt`** - Original 30-command test set
+- **`evaluation_50_commands.txt`** - 50 complex commands across 5 categories (System Monitoring, File Operations, Network & Security, Text Processing, System Administration)
 
 ## Usage
 

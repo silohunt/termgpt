@@ -202,10 +202,6 @@ TERMGPT_DISABLE_POSTPROCESSING=1 ./bin/termgpt --eval "command..."  # LLM baseli
 
 ### **Automated Testing**:
 ```bash
-# Create focused test for the 2 critical commands
-echo "Testing critical fixes..."
-./test_critical_fixes.sh  # Test just commands #11 and #14
-
 # Run full validation
 ./test_hardest_commands.sh  # All 15 commands
 ./run_focused_evaluation.sh # Regression test
