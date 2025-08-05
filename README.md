@@ -1,6 +1,6 @@
 # TermGPT
 
-A platform-aware, POSIX-compliant shell tool that converts natural language to Unix commands using a local LLM.
+A platform-aware shell tool that converts natural language to Unix commands using a local LLM.
 
 ## Features
 
@@ -10,7 +10,7 @@ A platform-aware, POSIX-compliant shell tool that converts natural language to U
 - **Local LLM Inference**: Complete privacy - no cloud dependencies
 - **Advanced Safety System**: 100+ patterns detect dangerous commands (and growing)
 - **Hardware Optimization**: GPU detection for smart model recommendations
-- **POSIX Compliant**: Runs on any Unix-like system
+- **Cross-Platform**: Runs on macOS, Linux, and WSL (requires bash for some features)
 - **Interactive Interface**: Review, copy, or explain commands before execution
 - **Interactive REPL Shell**: Persistent session for iterative command development
 
@@ -44,6 +44,15 @@ cd termgpt
 - Uses `xdg-open` for files and URLs
 - Detects package manager (apt/yum/pacman/etc.)
 - Optimizes for systemd services
+
+## Requirements
+
+- **Shell**: Bash (main scripts use POSIX sh, but evaluation and advanced features require bash)
+- **Dependencies**: `jq`, `curl`, `python3` (optional, for improved token counting)
+- **LLM Backend**: [Ollama](https://ollama.ai) running locally
+- **Platform Tools**: `pbcopy` (macOS) or `xclip/xsel/wl-copy` (Linux) for clipboard support
+
+> **Note**: While the core termgpt script aims for POSIX compliance, some features (evaluation framework, advanced post-processing tests) currently require bash. POSIX compliance improvements are planned for future releases.
 
 ## Installation
 
@@ -304,6 +313,17 @@ See `tests/README.md` for detailed testing documentation.
 - **Post-processing architecture**: `post-processing/docs/ARCHITECTURE.md`
 - **Evaluation results**: `docs/evaluation/`
 - **Manual page**: `man termgpt` (after installation)
+
+## Roadmap
+
+### Planned Improvements
+- [ ] **Full POSIX Compliance**: Gradual migration of bash-dependent features to POSIX sh
+  - [ ] Convert evaluation scripts from bash to POSIX sh with portable alternatives
+  - [ ] Replace bash arrays in post-processing tests with POSIX alternatives  
+  - [ ] Eliminate bashisms in advanced features while maintaining functionality
+- [ ] **Performance Optimizations**: Model warming for faster evaluation runs
+- [ ] **Extended Platform Support**: Enhanced Windows/WSL compatibility
+- [ ] **Advanced Post-Processing**: Machine learning-based command validation
 
 ## License
 
