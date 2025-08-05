@@ -431,6 +431,13 @@ verify_installation() {
     print_success "curl is installed"
   fi
   
+  # Check Python (for accurate token counting)
+  if ! command_exists python3; then
+    print_warning "python3 is not installed - token counting will use fallback mode"
+  else
+    print_success "python3 is installed (enables accurate token counting)"
+  fi
+  
   # Check Ollama
   if ! command_exists ollama; then
     print_error "Ollama is not installed"

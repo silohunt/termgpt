@@ -121,7 +121,7 @@ termgpt --model
 - **Ollama** (installed automatically by termgpt init)
 - **LLM Model** (downloaded automatically based on your system)
 - **jq, curl** (installed by init if missing)
-- **python3** (optional, for explainshell feature)
+- **python3** (recommended, for accurate token counting and explainshell features)
 - **4-6GB RAM** (depending on model choice)
 
 ## Privacy & History
