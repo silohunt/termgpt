@@ -25,7 +25,7 @@ Type .help for commands, .quit to exit
 termgpt> find large files
 Generated: find . -type f -size +100M
 
-[c]opy  [e]xplain  [r]un  [s]ave  [n]ext
+Use: .copy  .explain  .run  .save  .help
 
 termgpt> .copy
 ✓ Copied to clipboard
@@ -70,10 +70,10 @@ termgpt> .quit
 
 | Command | Description |
 |---------|-------------|
-| `.copy`, `.c` | Copy command to clipboard |
-| `.explain`, `.e` | Open command explanation in browser |
-| `.run`, `.r` | Execute command (with confirmation) |
-| `.save [name]`, `.s` | Save command as alias |
+| `.copy` | Copy command to clipboard |
+| `.explain` | Open command explanation in browser |
+| `.run` | Execute command (with confirmation) |
+| `.save [name]` | Save command as alias |
 
 ## Features
 

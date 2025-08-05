@@ -192,7 +192,7 @@ generate_command() {
   echo
   echo "Generated: $command"
   echo
-  echo "[c]opy  [e]xplain  [r]un  [s]ave  [n]ext"
+  echo "Use: .copy  .explain  .run  .save  .help"
   echo
   
   add_to_session "$query" "$command" "generated"
@@ -204,18 +204,18 @@ handle_dot_command() {
   cmd="$1"
   
   case "$cmd" in
-    .help|.h)
+    .help)
       show_help
       ;;
-    .quit|.exit|.q)
+    .quit|.exit)
       echo "✓ Session saved"
       exit 0
       ;;
-    .clear|.cl)
+    .clear)
       clear
       show_banner
       ;;
-    .history|.hist)
+    .history)
       show_session_history "${2:-10}"
       ;;
     .model)
@@ -239,7 +239,7 @@ handle_dot_command() {
     .aliases)
       show_aliases
       ;;
-    .copy|.c)
+    .copy)
       if [ -n "$LAST_COMMAND" ]; then
         copy_command "$LAST_COMMAND"
         add_to_session "$LAST_QUERY" "$LAST_COMMAND" "copied"
@@ -251,7 +251,7 @@ handle_dot_command() {
         echo "No command to copy"
       fi
       ;;
-    .explain|.e)
+    .explain)
       if [ -n "$LAST_COMMAND" ]; then
         explain_command "$LAST_COMMAND"
         add_to_session "$LAST_QUERY" "$LAST_COMMAND" "explained"
@@ -263,7 +263,7 @@ handle_dot_command() {
         echo "No command to explain"
       fi
       ;;
-    .run|.r)
+    .run)
       if [ -n "$LAST_COMMAND" ]; then
         run_command "$LAST_COMMAND"
         add_to_session "$LAST_QUERY" "$LAST_COMMAND" "executed"
@@ -275,7 +275,7 @@ handle_dot_command() {
         echo "No command to run"
       fi
       ;;
-    .save|.s)
+    .save)
       if [ -n "$LAST_COMMAND" ]; then
         save_name="${2:-cmd$COMMAND_COUNTER}"
         save_alias "$save_name" "$LAST_COMMAND"
@@ -425,9 +425,9 @@ Generation Commands:
   <natural language>    Generate shell command from description
 
 Dot Commands (REPL Control):
-  .help, .h            Show this help message
-  .quit, .exit, .q     Exit the REPL
-  .clear, .cl          Clear screen
+  .help                Show this help message
+  .quit, .exit         Exit the REPL
+  .clear               Clear screen
   .history [n]         Show last n commands (default 10)
   .model [name]        Show current model or switch model
   .config              Show current configuration
@@ -437,10 +437,10 @@ Dot Commands (REPL Control):
   .export [file]       Export session to file
 
 Action Commands (for last generated command):
-  .copy, .c            Copy command to clipboard
-  .explain, .e         Open command explanation in browser
-  .run, .r             Execute command (with confirmation)
-  .save [name], .s     Save command as alias
+  .copy                Copy command to clipboard
+  .explain             Open command explanation in browser
+  .run                 Execute command (with confirmation)
+  .save [name]         Save command as alias
 
 Examples:
   termgpt> find large files
@@ -477,23 +477,12 @@ main_loop() {
       continue
     fi
     
-    # Handle dot commands and single-letter shortcuts
+    # Handle dot commands only (no single-letter shortcuts to avoid ambiguity)
     if echo "$input" | grep -q "^\."; then
       # Split command and arguments
       cmd=$(echo "$input" | cut -d' ' -f1)
       args=$(echo "$input" | cut -s -d' ' -f2-)
       handle_dot_command "$cmd" $args
-    elif [ ${#input} -eq 1 ] && [ -n "$LAST_COMMAND" ]; then
-      # Handle single-letter shortcuts for last command
-      case "$input" in
-        c) handle_dot_command ".copy" ;;
-        e) handle_dot_command ".explain" ;;
-        r) handle_dot_command ".run" ;;
-        s) handle_dot_command ".save" ;;
-        q) handle_dot_command ".quit" ;;
-        h) handle_dot_command ".help" ;;
-        *) generate_command "$input" ;;
-      esac
     else
       # Generate command from natural language
       generate_command "$input"

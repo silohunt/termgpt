@@ -187,15 +187,15 @@ Type .help for commands, .quit to exit
 termgpt> find large files
 Generated: find . -type f -size +100M
 
-[c]opy  [e]xplain  [r]un  [s]ave  [n]ext
+Use: .copy  .explain  .run  .save  .help
 
-termgpt> c
+termgpt> .copy
 ✓ Copied to clipboard
 
 termgpt> compress those files
 Generated: find . -type f -size +100M -exec gzip {} \;
 
-termgpt> s compress-large
+termgpt> .save compress-large
 ✓ Saved alias 'compress-large'
 
 termgpt> .history
@@ -209,14 +209,14 @@ termgpt> .quit
 
 #### Shell Features
 - **Persistent Sessions**: Each session is saved with command history
-- **Action Shortcuts**: Single-letter commands (`c` = copy, `e` = explain, `r` = run, `s` = save)
+- **Dot Commands**: Unambiguous `.command` syntax following industry standards
 - **Alias System**: Save frequently used commands with custom names
 - **Session Export**: Export sessions for analysis or sharing
 - **History Integration**: Integrates with main TermGPT history system
 
 #### Shell Commands
 - **Generation**: Type natural language to generate commands
-- **Actions**: `c` (copy), `e` (explain), `r` (run), `s` (save)
+- **Actions**: `.copy`, `.explain`, `.run`, `.save`
 - **Control**: `.help`, `.quit`, `.history`, `.config`, `.stats`, `.aliases`
 
 For detailed shell documentation, see `docs/shell-mode.md`.
