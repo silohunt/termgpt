@@ -179,9 +179,9 @@ See how TermGPT automatically improves generated commands:
 ### Interactive Menu
 
 After generating a command, TermGPT presents options:
-- **[c]** Copy to clipboard (platform-aware)
-- **[e]** Explain on explainshell.com
-- **[q]** Quit without action
+- **c)** Copy to clipboard (platform-aware)
+- **e)** Explain on explainshell.com
+- **q)** Quit without action
 
 ### Platform-Specific Examples
 

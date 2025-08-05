@@ -15,7 +15,7 @@
 # Notes:
 # - POSIX sh script with strict error handling (set -eu).
 # - Commands are checked using `check_command_danger_level()` before display.
-# - Quick actions via single-key menu: copy [c], explain [e], quit [q].
+# - Quick actions via single-key menu: copy (c), explain (e), quit (q).
 #
 # TODO (dev): Add platform detection for clipboard (xclip) and URL opening (xdg-open) support on Linux
 
@@ -449,12 +449,12 @@ fi
 
 echo
 echo "Options:"
-echo "  [c] Copy to clipboard"
-echo "  [e] Explain on explainshell.com"
-echo "  [q] Quit"
+echo "  c) Copy to clipboard"
+echo "  e) Explain on explainshell.com"
+echo "  q) Quit"
 
 while true; do
-  printf "What would you like to do? [c/e/q] "
+  printf "What would you like to do? (c/e/q) "
   read -r ACTION
   case "$ACTION" in
     [Cc])
