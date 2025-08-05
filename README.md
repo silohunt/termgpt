@@ -50,11 +50,11 @@ cd termgpt
 ### Homebrew (Recommended)
 
 ```bash
-# Add the TermGPT tap (once published)
+# Install TermGPT
 brew tap silohunt/termgpt
 brew install termgpt
 
-# Initialize TermGPT
+# Initialize (installs Ollama, downloads model, configures platform)
 termgpt init
 ```
 
