@@ -6,7 +6,7 @@ A platform-aware shell tool that converts natural language to Unix commands usin
 
 - **Multiple Model Support**: Choose from CodeLlama, Qwen2.5 Coder, Stable Code, and more
 - **Platform-Aware**: Optimized for macOS, Linux, and WSL with automatic detection
-- **Smart Post-Processing**: 95%+ success rate with intelligent correction pipeline (verified through comprehensive evaluation)
+- **Smart Post-Processing**: 85%+ success rate with intelligent correction pipeline (rigorously validated)
 - **Local LLM Inference**: Complete privacy - no cloud dependencies
 - **Advanced Safety System**: 100+ patterns detect dangerous commands (and growing)
 - **Hardware Optimization**: GPU detection for smart model recommendations
