@@ -17,7 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 POSTPROCESS_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Source individual correction modules with error handling
-for module in time files platform-macos platform-linux security; do
+for module in complex-commands time files normalize platform-macos platform-linux security; do
     module_path="$POSTPROCESS_DIR/corrections/$module.sh"
     if [ -f "$module_path" ]; then
         . "$module_path"
@@ -74,14 +74,17 @@ apply_all_corrections() {
     fi
     
     # Apply corrections in order of importance
-    # 1. Security fixes (must come first)
+    # 1. Normalization (reduce variations)
+    command=$(apply_normalization_corrections "$command" "$original_query")
+    
+    # 2. Security fixes (must come first after normalization)
     command=$(apply_security_corrections "$command")
     
-    # 2. Semantic corrections (now context-aware)
+    # 3. Semantic corrections (now context-aware)
     command=$(apply_time_corrections "$command")
     command=$(apply_file_corrections "$command" "$original_query")
     
-    # 3. Platform-specific corrections
+    # 4. Platform-specific corrections
     case "$platform" in
         macos)
             command=$(apply_macos_corrections "$command")

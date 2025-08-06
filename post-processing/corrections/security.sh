@@ -5,44 +5,43 @@
 apply_security_corrections() {
     local command="$1"
     
-    # Fix unquoted variables that might contain spaces
-    # Match patterns like $VAR or ${VAR} not already in quotes
-    command=$(printf '%s\n' "$command" | sed 's/\${\([A-Za-z_][A-Za-z0-9_]*\)}/"\${1}"/g')
-    
-    # Fix paths with spaces - add quotes if missing
-    # This is tricky and conservative - only fix obvious cases
-    case "$command" in
-        *"/Users/"*|*"/home/"*|*"Program Files"*|*"Application Support"*)
-            # These paths commonly have spaces
-            # Add quotes around paths that contain spaces but aren't quoted
-            # This is a simplified approach - real implementation would be more sophisticated
-            ;;
-    esac
-    
-    # Prevent rm -rf / variations
-    command=$(printf '%s\n' "$command" | sed 's|rm -rf /[[:space:]]*$|rm -rf /dev/null|g')
-    command=$(printf '%s\n' "$command" | sed 's|rm -rf /*[[:space:]]*$|rm -rf /dev/null|g')
-    
-    # Fix dangerous chmod 777
-    command=$(printf '%s\n' "$command" | sed 's/chmod 777/chmod 755/g')
+    # Focus on CORRECTIONS not covered by the main rules system
+    # The rules system handles detection/warnings, we handle safe transformations
     
     # Fix dangerous find -exec without {} quoting
-    command=$(printf '%s\n' "$command" | sed 's/-exec \([^;]*\){}/-exec \1"{}"/g')
+    # Only add single quotes if {} is not already quoted
+    if printf '%s' "$command" | grep -q -- '-exec.*{}'; then
+        if ! printf '%s' "$command" | grep -q -- "-exec.*['\"]{}['\"]"; then
+            command=$(printf '%s\n' "$command" | sed "s/-exec \([^;]*\){}/-exec \1'{}'/g")
+        fi
+    fi
     
-    # Prevent eval with uncontrolled input
+    # Quote command substitutions in echo to prevent injection
     case "$command" in
-        *"eval"*"\$"*|*"eval"*"\`"*)
-            # This is potentially dangerous
-            # In real usage, we might want to warn rather than modify
+        echo\ \$\(*\)*|echo\ \`*\`*)
+            # Quote unquoted command substitutions
+            command=$(printf '%s\n' "$command" | sed 's/echo \$(\([^)]*\))/echo "$(\1)"/g')
+            command=$(printf '%s\n' "$command" | sed 's/echo `\([^`]*\)`/echo "`\1`"/g')
             ;;
     esac
     
     # Fix wget/curl without output specification (could overwrite files)
+    # This is a usability improvement, not dangerous command prevention
     case "$command" in
-        *"wget http"*|*"curl http"*)
+        wget\ http*)
             if ! printf '%s' "$command" | grep -q -- '-O\|--output\|>'; then
-                # Add safe output redirection
-                command="$command > downloaded_file"
+                # Extract filename from URL
+                filename=$(printf '%s' "$command" | sed 's|.*/||' | sed 's|?.*||')
+                [ -z "$filename" ] && filename="file.zip"
+                command="wget -O $filename ${command#wget }"
+            fi
+            ;;
+        curl\ http*)
+            if ! printf '%s' "$command" | grep -q -- '-o\|--output\|>'; then
+                # Extract filename from URL
+                filename=$(printf '%s' "$command" | sed 's|.*/||' | sed 's|?.*||')
+                [ -z "$filename" ] && filename="script.sh"
+                command="curl -o $filename ${command#curl }"
             fi
             ;;
     esac
