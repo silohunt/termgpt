@@ -1,7 +1,7 @@
 .\" Man page for termgpt
 .TH TERMGPT 1 "2025" "TermGPT" "User Commands"
 .SH NAME
-termgpt \- platform-aware natural language to POSIX shell command converter
+termgpt \- convert natural language to shell commands using local LLM
 .SH SYNOPSIS
 .B termgpt
 .I "natural language request"
@@ -23,21 +23,12 @@ termgpt \- platform-aware natural language to POSIX shell command converter
 .RB [ options ]
 .SH DESCRIPTION
 .B termgpt
-translates natural language descriptions into POSIX-compliant shell commands
-using a local Large Language Model (LLM) via Ollama. The tool is platform-aware,
-automatically detecting the operating system and available tools to generate
-optimized commands for the target environment.
+converts natural language descriptions to shell commands using a local LLM via Ollama.
+The tool detects the operating system and available tools to generate platform-appropriate commands.
 .PP
-Key features include local inference for privacy, comprehensive safety validation,
-intelligent post-processing with 95%+ success rate on practical commands,
-platform-specific command optimization, and intelligent tool integration.
-Commands are never executed automatically - they are always presented for
-user review and confirmation.
-.PP
-The system includes a sophisticated post-processing pipeline that enhances LLM
-output through context-aware corrections, complex command preservation, and
-platform-specific optimizations. Performance has been validated through
-comprehensive evaluation across 50+ complex scenarios.
+Features include local processing for privacy, safety validation to prevent dangerous commands,
+and post-processing corrections for improved reliability. Commands are presented for user
+review and never executed automatically.
 .SH OPTIONS
 .TP
 .BR --version , -V
@@ -47,21 +38,19 @@ Display version information and exit
 Display current model configuration and exit
 .TP
 .BR --eval
-Non-interactive evaluation mode that outputs only the generated command
-without presenting the interactive menu. Used for testing and automation.
+Non-interactive mode that outputs only the generated command without user prompts
 .TP
 .I "natural language request"
-The natural language description of the desired shell command
+Description of the desired shell command
 .SH INITIALIZATION
 .B termgpt init
-initializes and configures TermGPT on your system. It automatically detects
-your platform, installs dependencies, downloads LLM models, and creates
-configuration files.
+configures TermGPT on the system. Detects platform, installs dependencies,
+downloads LLM models, and creates configuration files.
 .PP
 .B Init options:
 .TP
 .BR --headless
-Non-interactive mode using all defaults
+Non-interactive mode using defaults
 .TP
 .BR --model " MODEL"
 Specify LLM model (default: codellama:7b-instruct)
@@ -79,9 +68,8 @@ Verify installation without making changes
 Force re-download of models and dependencies
 .SH INTERACTIVE SHELL
 .B termgpt shell
-starts an interactive REPL (Read-Eval-Print Loop) session for iterative
-command development. The shell provides persistent sessions, command history,
-and action shortcuts for enhanced productivity.
+starts an interactive REPL session for iterative command development with
+persistent sessions and command history.
 .PP
 .B Shell options:
 .TP
@@ -96,25 +84,25 @@ Show recent session history on startup
 .I "natural language"
 Generate shell commands from natural language descriptions
 .TP
-.BR .help , .h
+.BR .help
 Show available commands
 .TP
-.BR .quit , .exit , .q
+.BR .quit ", " .exit
 Exit the shell (saves session)
 .TP
 .BR .history " [N]"
 Show last N commands (default: 10)
 .TP
-.BR .copy , .c
+.BR .copy
 Copy last generated command to clipboard
 .TP
-.BR .explain , .e
+.BR .explain
 Open last generated command in explainshell.com
 .TP
-.BR .run , .r
+.BR .run
 Execute last generated command (with confirmation)
 .TP
-.BR .save " [NAME]" , .s
+.BR .save " [NAME]"
 Save last generated command as an alias
 .TP
 .BR .aliases
@@ -125,168 +113,86 @@ Show session statistics
 .TP
 .BR .config
 Show current configuration
-.PP
-Single-letter shortcuts (c, e, r, s, q, h) work when a command has been generated.
 .SH INTERACTIVE MENU
-After generating a command, termgpt presents an interactive menu with the
-following options:
+After generating a command, termgpt presents an interactive menu:
 .TP
-.B c
-Copy the generated command to the clipboard using platform-appropriate tools:
-pbcopy on macOS, xclip/xsel/wl-copy on Linux
+.B copy
+Copy the generated command to clipboard
 .TP
-.B e
-Open the command in explainshell.com for detailed explanation using the
-system's default URL handler (open on macOS, xdg-open on Linux)
+.B explain
+Open the command in explainshell.com for detailed explanation
 .TP
-.B q
+.B quit
 Quit without taking any action
-.SH PLATFORM AWARENESS
+.SH PLATFORM DETECTION
 .B termgpt
-automatically detects the operating system and available tools to provide
-optimized command generation:
+automatically detects the operating system and tools:
 .PP
-.B macOS Integration:
-.IP \(bu 2
-Uses pbcopy/pbpaste for clipboard operations
-.IP \(bu 2
-Uses 'open' command for files and URLs
-.IP \(bu 2
-Recommends Homebrew for package management
-.IP \(bu 2
-Suggests mdfind for Spotlight searches
+.B macOS:
+Uses pbcopy for clipboard, 'open' for files/URLs, recommends Homebrew packages
 .PP
-.B Linux Integration:
-.IP \(bu 2
-Auto-detects xclip, xsel, or wl-copy for clipboard
-.IP \(bu 2
-Uses xdg-open for files and URLs
-.IP \(bu 2
-Detects package manager (apt, yum, pacman, etc.)
-.IP \(bu 2
-Optimizes for systemd service management
+.B Linux:
+Detects clipboard tools (xclip/xsel/wl-copy), uses xdg-open, detects package managers
 .PP
-.B WSL Integration:
-.IP \(bu 2
-Automatic WSL detection via /proc/version
-.IP \(bu 2
-Optimized model recommendations for limited resources
-.IP \(bu 2
-Performance-aware default settings
+.B WSL:
+Automatic detection via /proc/version with optimized model recommendations
 .SH FILES
 .TP
-.I /usr/local/lib/termgpt/termgpt-check.sh
-Library for command validation
-.TP
-.I /usr/local/lib/termgpt/termgpt-platform.sh
-Platform detection and tool mapping library
-.TP
-.I /usr/local/share/termgpt/rules.txt
-System-wide dangerous command patterns
-.TP
 .I ~/.config/termgpt/platform.conf
-User-specific platform configuration (generated by setup)
+Platform configuration (generated by init)
 .TP
 .I ~/.config/termgpt/rules.txt
-User-specific command patterns (optional, overrides system rules)
+User-specific safety rules (optional)
 .TP
-.I ~/.config/termgpt/lib/
-User-specific libraries (for user installations)
+.I /usr/local/share/termgpt/rules.txt
+System-wide safety rules
 .SH ENVIRONMENT
 .TP
 .B TERMGPT_PLATFORM
-Override detected platform (macos, linux, etc.)
-.TP
-.B TERMGPT_RULES_PATH
-Override the default rules file location
+Override detected platform (macos, linux, wsl)
 .TP
 .B TERMGPT_MODEL
-Override the default LLM model (default: codellama:7b-instruct)
+Override default LLM model
 .TP
 .B TERMGPT_DISABLE_POSTPROCESSING
-Set to "1" to disable the post-processing pipeline, useful for evaluation
-and testing purposes to compare raw LLM output with enhanced results
+Set to "1" to disable post-processing corrections
 .SH EXAMPLES
 .TP
-Initialize TermGPT with default settings:
+Initialize with defaults:
 .B termgpt init
 .TP
-Initialize with specific model:
-.B termgpt init --model codellama:13b
+Generate a command:
+.B termgpt "find all python files larger than 1MB"
 .TP
-Check installation status:
-.B termgpt init --check
+Non-interactive mode:
+.B termgpt --eval "compress the docs folder"
 .TP
-Generate a command to list all Python files:
-.B termgpt "list all python files"
-.TP
-Generate a command to find large files:
-.B termgpt "find files larger than 100MB"
-.TP
-Generate a command to compress a directory:
-.B termgpt "create a tar.gz archive of the docs folder"
-.TP
-Non-interactive evaluation mode:
-.B termgpt --eval "find all log files larger than 100MB"
-.PP
-.B Platform-specific examples:
-.TP
-Copy directory path to clipboard (adapts to platform):
-.B termgpt "copy current directory path to clipboard"
-.br
-macOS result: pwd | pbcopy
-.br
-Linux result: pwd | xclip -selection clipboard
-.TP
-Open file manager (adapts to platform):
-.B termgpt "open current directory in file manager"
-.br
-macOS result: open .
-.br
-Linux result: xdg-open .
+Interactive shell:
+.B termgpt shell
 .SH DEPENDENCIES
 .TP
 .B Ollama
 Local LLM server (https://ollama.ai)
 .TP
 .B codellama:7b-instruct
-Default LLM model with excellent instruction following and platform awareness
-.TP
-.B qwen2.5-coder:7b
-Alternative coding model with good performance/memory ratio
-.TP
-.B stable-code:3b
-Lightweight model for WSL and resource-constrained systems
+Default LLM model
 .TP
 .B jq
-Command-line JSON processor
+JSON processor
 .TP
 .B curl
-Command-line HTTP client
-.TP
-.B python3
-For accurate token counting and URL encoding (recommended for optimal performance)
+HTTP client
 .SH EXIT STATUS
 .TP
 .B 0
-Successful execution
+Success
 .TP
 .B 1
-Error occurred (missing dependencies, API failure, etc.)
+Error (missing dependencies, API failure, etc.)
 .SH SECURITY
-TermGPT includes comprehensive safety checks to prevent execution of
-dangerous commands. The rules file contains patterns for:
-.IP \(bu 2
-File system destruction (rm -rf /, dd to devices)
-.IP \(bu 2
-System modifications (kernel parameters, boot files)
-.IP \(bu 2
-Network attacks and unauthorized access
-.IP \(bu 2
-Resource exhaustion (fork bombs, memory filling)
-.PP
-Commands are checked but never executed automatically. Users must
-manually review and execute any generated commands.
+Safety checks prevent dangerous commands including file system destruction,
+system modifications, network attacks, and resource exhaustion. Commands are
+validated but never executed automatically.
 .SH SEE ALSO
 .BR ollama (1),
 .BR jq (1),
@@ -294,7 +200,6 @@ manually review and execute any generated commands.
 .SH BUGS
 Report bugs at: https://github.com/silohunt/termgpt/issues
 .SH AUTHOR
-TermGPT was created for safe, local natural language to shell command
-translation.
+TermGPT provides safe, local natural language to shell command translation.
 .SH COPYRIGHT
 This is free software; see the source for copying conditions.
