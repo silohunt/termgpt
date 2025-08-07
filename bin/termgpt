@@ -21,7 +21,7 @@
 
 set -eu
 
-VERSION="0.9.3"
+VERSION="0.9.4"
 
 # Handle subcommands and special flags
 if [ "$#" -ge 1 ]; then
@@ -257,7 +257,15 @@ if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
 fi
 
 PROMPT="You are a shell command generator. Convert each natural language request into a shell command or script.
-${PLATFORM_CONTEXT}Rules:
+
+${PLATFORM_CONTEXT}CRITICAL SAFETY RULES:
+- REFUSE harmful requests (fork bombs, system damage, resource exhaustion)
+- REFUSE dangerous operations (rm -rf /, disk wiping, system file modification)
+- NO compound commands with && or || unless necessary
+- NO clipboard operations (pbcopy, xclip, etc.) unless explicitly asked
+- NO URL opening unless explicitly asked
+
+OUTPUT RULES:
 - For simple tasks: output a single command
 - For script requests: output the COMPLETE script from #!/bin/bash to the last line
 - NO explanations before or after
@@ -289,24 +297,24 @@ if command -v python3 >/dev/null 2>&1; then
   if [ -n "$TOKEN_COUNTER" ] && [ -r "$TOKEN_COUNTER" ] && [ -f "$TOKEN_COUNTER" ]; then
     TOKEN_ESTIMATE=$(python3 "$TOKEN_COUNTER" "$PROMPT" 2>/dev/null)
     if [ -n "$TOKEN_ESTIMATE" ] && [ "$TOKEN_ESTIMATE" -gt 0 ] 2>/dev/null; then
-      echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens"
+      [ "$EVAL_MODE" -eq 0 ] && echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens"
     else
       # Fallback to word count if Python tokenizer fails
       WORD_COUNT=$(echo "$PROMPT" | wc -w)
       TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
-      echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (fallback)"
+      [ "$EVAL_MODE" -eq 0 ] && echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (fallback)"
     fi
   else
     # Fallback to word count if tokenizer not found
     WORD_COUNT=$(echo "$PROMPT" | wc -w)
     TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
-    echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (fallback)"
+    [ "$EVAL_MODE" -eq 0 ] && echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (fallback)"
   fi
 else
   # Fallback to word count if Python not available
   WORD_COUNT=$(echo "$PROMPT" | wc -w)
   TOKEN_ESTIMATE=$(( WORD_COUNT * 13 / 10 ))
-  echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (no python3)"
+  [ "$EVAL_MODE" -eq 0 ] && echo "Estimated prompt length: ~${TOKEN_ESTIMATE} tokens (no python3)"
 fi
 
 MAX_TOKENS=2000

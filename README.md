@@ -4,15 +4,12 @@ A platform-aware shell tool that converts natural language to Unix commands usin
 
 ## Features
 
-- **Multiple Model Support**: Choose from CodeLlama, Qwen2.5 Coder, Stable Code, and more
-- **Platform-Aware**: Optimized for macOS, Linux, and WSL with automatic detection
-- **Platform Corrections**: Fixes macOS/Linux compatibility issues (netstat flags, case sensitivity)
-- **Local LLM Inference**: Complete privacy - no cloud dependencies
-- **Safety System**: Detects dangerous commands (rm -rf, fork bombs)
-- **Hardware Optimization**: GPU detection for smart model recommendations
-- **Cross-Platform**: Runs on macOS, Linux, and WSL
-- **Interactive Interface**: Review, copy, or explain commands before execution
-- **Interactive REPL Shell**: Persistent session for iterative command development
+- **Local LLM**: Complete privacy - no cloud dependencies
+- **Platform-Aware**: Automatic macOS/Linux compatibility fixes
+- **Simple Post-Processing**: Basic platform corrections (BSD vs GNU tools)
+- **Interactive Mode**: Review commands before execution
+- **Safety Detection**: Warns about dangerous operations
+- **Context-Aware Shell**: Interactive mode with conversational context carryover
 
 ## Quick Start
 
@@ -47,12 +44,10 @@ cd termgpt
 
 ## Requirements
 
-- **Shell**: Bash (main scripts use POSIX sh, but evaluation and advanced features require bash)
-- **Dependencies**: `jq`, `curl`, `python3` (optional, for improved token counting)
+- **Shell**: POSIX sh (main scripts), some features require bash
+- **Dependencies**: `jq`, `curl`, `python3` (optional)
 - **LLM Backend**: [Ollama](https://ollama.ai) running locally
-- **Platform Tools**: `pbcopy` (macOS) or `xclip/xsel/wl-copy` (Linux) for clipboard support
-
-> **Note**: While the core termgpt script aims for POSIX compliance, some features (evaluation framework, advanced post-processing tests) currently require bash. POSIX compliance improvements are planned for future releases.
+- **Platform Tools**: Platform-specific clipboard tools (detected automatically)
 
 ## Installation
 
@@ -193,46 +188,37 @@ termgpt
 
 ### Interactive Shell Mode
 
-TermGPT includes a powerful REPL (Read-Eval-Print Loop) for iterative command development:
+TermGPT includes an interactive shell with context awareness:
 
 ```bash
 # Start interactive shell
 termgpt shell
 
-# Example session:
+# Example session with context carryover:
 $ termgpt shell
-TermGPT v0.8.0 (codellama:7b-instruct) - Interactive Mode
+TermGPT v0.9.4 (codellama:7b-instruct) - Interactive Mode
 Type .help for commands, .quit to exit
 
-termgpt> find large files
-Generated: find . -type f -size +100M
+termgpt> find all shell scripts
+Generated: find . -type f -name "*.sh"
 
 Use: .copy  .explain  .run  .save  .help
 
-termgpt> .copy
-✓ Copied to clipboard
+termgpt> show their sizes
+Generated: find . -type f -name "*.sh" -exec du -h {} +
 
-termgpt> compress those files
-Generated: find . -type f -size +100M -exec gzip {} \;
-
-termgpt> .save compress-large
-✓ Saved alias 'compress-large'
-
-termgpt> .history
-Recent commands (last 10):
-1. find . -type f -size +100M (copied)
-2. find . -type f -size +100M -exec gzip {} \; (saved as compress-large)
+termgpt> compress the largest one  
+Generated: find . -type f -name "*.sh" -exec du -h {} + | sort -hr | head -1 | cut -f2 | xargs gzip
 
 termgpt> .quit
 ✓ Session saved
 ```
 
 #### Shell Features
+- **Context Awareness**: Maintains context from previous commands for natural conversation
+- **Pronoun Resolution**: "find files" → "show their sizes" → "compress them" 
 - **Persistent Sessions**: Each session is saved with command history
-- **Dot Commands**: Unambiguous `.command` syntax following industry standards
-- **Alias System**: Save frequently used commands with custom names
-- **Session Export**: Export sessions for analysis or sharing
-- **History Integration**: Integrates with main TermGPT history system
+- **Safety Integration**: Context-aware prompts still go through safety validation
 
 #### Shell Commands
 - **Generation**: Type natural language to generate commands
@@ -242,88 +228,52 @@ termgpt> .quit
 For detailed shell documentation, see `docs/shell-mode.md`.
 
 ### Advanced Features
-- **Safety Detection**: Automatically warns about dangerous commands
-- **Platform Optimization**: Commands optimized for your OS (macOS/Linux/WSL)
-- **Smart Corrections**: Intelligent post-processing pipeline with 95%+ success rate on practical commands
-- **Complex Command Preservation**: Protects valid multi-step commands from over-correction
-- **Context-Aware Processing**: Uses original query for semantic understanding
+- **Safety Detection**: Warns about dangerous commands
+- **Platform Corrections**: Handles macOS/Linux differences
 - **Multiple Models**: Switch between different coding models
 - **History Tracking**: Local logging for training data (optional)
-- **Interactive REPL**: Persistent shell for iterative command development
-- **Accurate Token Counting**: Model-agnostic Python-based tokenization for precise context estimation
-- **Comprehensive Testing**: Validated against 50+ complex scenarios across 5 categories
+- **Interactive REPL**: Persistent shell for iterative development
 
 ## How It Works
 
-TermGPT uses a multi-layer approach to generate reliable commands:
+TermGPT uses a simple approach:
 
-1. **Context Analysis**: Python-based tokenizer provides accurate context length estimation for any LLM model
-2. **LLM Generation**: Local model converts natural language to shell commands
-3. **Smart Post-Processing**: Intelligent correction pipeline with proven 95%+ success rate:
-   - **Complex Command Preservation**: Protects valid multi-step commands from over-correction
-   - **Platform Compatibility**: Handles macOS/Linux differences (netstat flags, case sensitivity, tool availability)
-   - **Context-Aware Corrections**: Uses original query for semantic understanding
-   - **Time Logic**: Fixes temporal semantics (`-mtime +7` → `-mtime -7` for "last week")
-   - **File Pattern Enhancement**: Adds appropriate filters (`*.log` for log operations)
-   - **Path Optimization**: Uses better default locations (`/var/log` for logs, system paths)
-   - **Security Corrections**: Removes dangerous patterns while preserving functionality
-4. **Safety Validation**: 100+ patterns detect dangerous operations
-5. **User Review**: Interactive confirmation before execution
+1. **LLM Generation**: Local model converts natural language to shell commands
+2. **Platform Corrections**: Basic fixes for macOS/Linux compatibility
+3. **Safety Check**: Detects dangerous operations
+4. **User Review**: Interactive confirmation before execution
 
-### Example Improvements
+### Example Platform Correction
 
-**Input**: `"compress all log files from last week"`
+**Input**: `"show network connections"`
 
-**Before Post-Processing**:
-```bash
-find . -type f -mtime +7 -exec gzip {} \;  # Wrong: finds files older than 7 days
-```
-
-**After Post-Processing**:
-```bash
-find /var/log -name "*.log" -type f -mtime -7 -exec gzip {} \;  # Correct: recent log files
-```
+**Linux**: `netstat -tulpn`  
+**macOS**: `netstat -anvp tcp`
 
 ## Testing
 
-TermGPT includes comprehensive evaluation and testing frameworks:
-
-### Run Evaluation Tests
 ```bash
-# Quick performance check (10 practical commands)
-cd tests/evaluation && ./run_focused_evaluation.sh
+# Run basic unit tests
+cd tests/unit && ./run-unit-tests.sh
 
-# Edge case testing (15 challenging commands)  
-cd tests/evaluation && ./test_hardest_commands.sh
+# Test post-processing modules
+cd post-processing/tests && ./run-tests.sh
 
-# Comprehensive evaluation (50 commands across all categories)
-cd tests/evaluation && ./run_comprehensive_evaluation.sh
+# Benchmark different models
+cd tests/benchmarking && ./benchmark.sh
 ```
-
-### Test Results
-- **Practical Commands**: 95-100% success rate
-- **Complex Edge Cases**: 80-93% success rate
-- **Overall Performance**: 85-95% depending on command complexity
-
-See `tests/README.md` for detailed testing documentation.
 
 ## Documentation
 
-- **Full documentation**: `doc/README.md`
-- **Post-processing architecture**: `post-processing/docs/ARCHITECTURE.md`
-- **Evaluation results**: `docs/evaluation/`
+- **Post-processing system**: `post-processing/README.md`
 - **Manual page**: `man termgpt` (after installation)
 
 ## Roadmap
 
 ### Planned Improvements
-- [ ] **Full POSIX Compliance**: Gradual migration of bash-dependent features to POSIX sh
-  - [ ] Convert evaluation scripts from bash to POSIX sh with portable alternatives
-  - [ ] Replace bash arrays in post-processing tests with POSIX alternatives  
-  - [ ] Eliminate bashisms in advanced features while maintaining functionality
-- [ ] **Performance Optimizations**: Model warming for faster evaluation runs
+- [ ] **Full POSIX Compliance**: Migrate remaining bash features to POSIX sh
 - [ ] **Extended Platform Support**: Enhanced Windows/WSL compatibility
-- [ ] **Advanced Post-Processing**: Machine learning-based command validation
+- [ ] **Model Performance**: Optimization for faster inference
 
 ## License
 

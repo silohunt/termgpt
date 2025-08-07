@@ -1,0 +1,50 @@
+name: Update Homebrew Formula
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  update-homebrew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          
+      - name: Download release tarball and get SHA256
+        id: sha
+        run: |
+          curl -sL https://github.com/silohunt/termgpt/archive/${{ steps.version.outputs.tag }}.tar.gz > release.tar.gz
+          SHA256=$(sha256sum release.tar.gz | cut -d' ' -f1)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          
+      - name: Checkout homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: silohunt/homebrew-termgpt
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+          
+      - name: Update formula
+        run: |
+          cd homebrew-tap
+          sed -i "s|url \".*\"|url \"https://github.com/silohunt/termgpt/archive/${{ steps.version.outputs.tag }}.tar.gz\"|" termgpt.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${{ steps.sha.outputs.sha256 }}\"|" termgpt.rb  
+          sed -i "s|version \".*\"|version \"${{ steps.version.outputs.version }}\"|" termgpt.rb
+          
+      - name: Commit and push formula update
+        run: |
+          cd homebrew-tap
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add termgpt.rb
+          git commit -m "Update TermGPT to ${{ steps.version.outputs.tag }}"
+          git push

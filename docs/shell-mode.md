@@ -1,6 +1,6 @@
 # TermGPT Shell Mode (REPL)
 
-TermGPT Shell Mode provides an interactive REPL (Read-Eval-Print Loop) interface for iterative command development and exploration.
+TermGPT Shell Mode provides an interactive REPL (Read-Eval-Print Loop) interface with context awareness for natural, conversational command development.
 
 ## Quick Start
 
@@ -19,11 +19,21 @@ termgpt shell --history
 
 ```
 $ termgpt shell
-TermGPT v0.8.0 (codellama:7b-instruct) - Interactive Mode
+TermGPT v0.9.3 (codellama:7b-instruct) - Interactive Mode
 Type .help for commands, .quit to exit
 
-termgpt> find large files
-Generated: find . -type f -size +100M
+termgpt> find all shell scripts
+Generated: find . -type f -name "*.sh"
+
+Use: .copy  .explain  .run  .save  .help
+
+termgpt> show their sizes
+Generated: find . -type f -name "*.sh" -exec du -h {} +
+
+Use: .copy  .explain  .run  .save  .help
+
+termgpt> compress the largest one
+Generated: find . -type f -name "*.sh" -exec du -h {} + | sort -hr | head -1 | cut -f2 | xargs gzip
 
 Use: .copy  .explain  .run  .save  .help
 
@@ -74,6 +84,45 @@ termgpt> .quit
 | `.explain` | Open command explanation in browser |
 | `.run` | Execute command (with confirmation) |
 | `.save [name]` | Save command as alias |
+
+## Context Awareness (New in v0.9.3)
+
+The shell now maintains conversational context from your previous commands, enabling natural pronoun usage and command chaining:
+
+### Context Examples
+
+**Pronoun Resolution:**
+```bash
+termgpt> find all python files
+Generated: find . -type f -name "*.py"
+
+termgpt> show their sizes
+Generated: find . -type f -name "*.py" -exec du -h {} +
+
+termgpt> delete the large ones
+Generated: find . -type f -name "*.py" -size +1M -delete
+```
+
+**Smart Context Switching:**
+```bash
+termgpt> list log files  
+Generated: ls /var/log/*.log
+
+termgpt> count their lines
+Generated: wc -l /var/log/*.log
+
+termgpt> install nodejs              # Context ignored - unrelated request
+Generated: brew install nodejs
+
+termgpt> compress those logs         # Context resumed - refers back to log files  
+Generated: gzip /var/log/*.log
+```
+
+**How Context Works:**
+- Maintains history of last 3 command interactions
+- LLM intelligently uses context when relevant (pronouns, references)
+- Automatically ignores context for unrelated new requests
+- Works seamlessly with safety system - dangerous requests still refused regardless of context
 
 ## Features
 

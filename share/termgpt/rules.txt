@@ -51,7 +51,8 @@
 [CRITICAL] ^yes[[:space:]]*\|[[:space:]]*while[[:space:]]+read.*\|[[:space:]]*while[[:space:]]+read
 [CRITICAL] ^yes[[:space:]]*\|[[:space:]]*bash[[:space:]]+-c[[:space:]]+['"]exec[[:space:]]+bash.*\$0.*['"][[:space:]]*&?$
 [CRITICAL] ^while[[:space:]]+true;[[:space:]]+do[[:space:]]+/(bin/)?(ba|z|sh)\w*[[:space:]]+&[[:space:]]+done$
-[CRITICAL] while[[:space:]]+true;[[:space:]]*do[[:space:]]+.*&[[:space:]]*done|Infinite loop creating background processes
+[CRITICAL] while[[:space:]]+true;[[:space:]]*do[[:space:]]+.*&[[:space:]]*done
+[CRITICAL] while[[:space:]]+:;[[:space:]]*do[[:space:]]+.*&[[:space:]]*done
 [CRITICAL] ^while[[:space:]]+:;[[:space:]]+do[[:space:]]+\([[:space:]]*:[[:space:]]*\);[[:space:]]+done$
 [CRITICAL] rm[[:space:]]+-[rf]+[[:space:]]+(\.\./)+\S*
 [CRITICAL] cat[[:space:]]+>[[:space:]]+/etc/(hosts|ssh/sshd_config)

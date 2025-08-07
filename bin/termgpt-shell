@@ -15,7 +15,7 @@
 
 set -eu
 
-VERSION="0.9.3"
+VERSION="0.9.4"
 SCRIPT_DIR="$(dirname "$0")"
 
 # REPL state
@@ -25,6 +25,10 @@ LAST_SAFETY_LEVEL=""
 SESSION_ID=""
 SESSION_START=""
 COMMAND_COUNTER=0
+
+# Context tracking (last 3 interactions for context awareness)
+CONTEXT_QUERIES=""
+CONTEXT_COMMANDS=""
 
 # Session storage
 SESSION_DIR="$HOME/.config/termgpt/sessions"
@@ -170,9 +174,15 @@ show_session_history() {
 generate_command() {
   query="$1"
   
+  # Build context-aware query if we have previous interactions
+  context_aware_query="$query"
+  if [ -n "$CONTEXT_QUERIES" ]; then
+    context_aware_query="Previous context: $CONTEXT_QUERIES. Current request: $query. Output ONLY the command, no explanations."
+  fi
+  
   # Call the main termgpt script in eval mode
-  if ! command_output=$("$SCRIPT_DIR/termgpt" --eval "$query" 2>&1); then
-    echo "Error: Failed to generate command"
+  if ! command_output=$("$SCRIPT_DIR/termgpt" --eval "$context_aware_query" 2>&1); then
+    # Just show the termgpt error, don't add wrapper message
     echo "$command_output"
     return 1
   fi
@@ -189,6 +199,9 @@ generate_command() {
   LAST_QUERY="$query"
   LAST_SAFETY_LEVEL=""  # TODO: Extract safety level from output
   
+  # Update context for next command (keep last 3 interactions)
+  update_context "$query" "$command"
+  
   echo
   echo "Generated: $command"
   echo
@@ -197,6 +210,29 @@ generate_command() {
   
   add_to_session "$query" "$command" "generated"
   return 0
+}
+
+
+# Update context for next command (keep last 3 interactions)
+update_context() {
+  query="$1"
+  command="$2"
+  
+  # Add new interaction to context (keep it concise)
+  # Extract just the key command, not explanations
+  clean_command=$(echo "$command" | head -n 1 | sed 's/^[[:space:]]*//')
+  new_context="$query -> $clean_command"
+  
+  if [ -z "$CONTEXT_QUERIES" ]; then
+    CONTEXT_QUERIES="$new_context"
+  else
+    # Keep only last 3 interactions (simple approach - count lines)
+    CONTEXT_QUERIES="$CONTEXT_QUERIES
+$new_context"
+    
+    # Trim to last 3 lines
+    CONTEXT_QUERIES=$(echo "$CONTEXT_QUERIES" | tail -n 3)
+  fi
 }
 
 # Handle dot commands
@@ -485,7 +521,7 @@ main_loop() {
       handle_dot_command "$cmd" $args
     else
       # Generate command from natural language
-      generate_command "$input"
+      generate_command "$input" || true  # Don't exit shell on generation errors
     fi
     
     echo
