@@ -21,7 +21,7 @@
 
 set -eu
 
-VERSION="0.9.2"
+VERSION="0.9.3"
 
 # Handle subcommands and special flags
 if [ "$#" -ge 1 ]; then
@@ -256,15 +256,14 @@ if [ -n "${TERMGPT_PLATFORM:-}" ] && [ "$TERMGPT_PLATFORM" != "unknown" ]; then
   PLATFORM_CONTEXT="Platform: $TERMGPT_PLATFORM. "
 fi
 
-PROMPT="You are a shell command generator. Convert each natural language request into a single POSIX-compliant shell command.
-${PLATFORM_CONTEXT}CRITICAL: 
-- Only output ONE command that directly answers the request
-- NO clipboard operations (pbcopy, xclip, etc.) unless explicitly asked
-- NO URL opening unless explicitly asked  
-- NO compound commands with && or ||
-- NO explanations, markdown, or extra text
-- REFUSE harmful requests (fork bombs, system damage, resource exhaustion)
-- Just the bare shell command and nothing else
+PROMPT="You are a shell command generator. Convert each natural language request into a shell command or script.
+${PLATFORM_CONTEXT}Rules:
+- For simple tasks: output a single command
+- For script requests: output the COMPLETE script from #!/bin/bash to the last line
+- NO explanations before or after
+- NO markdown backticks
+- NO prose or descriptions
+- Just output the raw command or full script
 
 Request: $USER_PROMPT"
 
@@ -351,7 +350,12 @@ if [ -z "$RAW" ]; then
 fi
 
 CLEANED=$(echo "$RAW" | sed -e 's/^```.*$//' -e 's/`//g' -e '/^$/d')
-COMMAND=$(echo "$CLEANED" | head -n 1)
+# Check if this looks like a script request (starts with shebang or has multiple meaningful lines)
+if echo "$CLEANED" | head -n 1 | grep -q "^#!" || [ $(echo "$CLEANED" | wc -l) -gt 1 ] && echo "$USER_PROMPT" | grep -qi "script"; then
+  COMMAND="$CLEANED"
+else
+  COMMAND=$(echo "$CLEANED" | head -n 1)
+fi
 
 # Check for refusals or safety responses
 if echo "$COMMAND" | grep -qi "can't\|cannot\|refuse\|harmful\|dangerous\|not within my"; then
@@ -366,12 +370,45 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" = "null" ]; then
   exit 1
 fi
 
-# Apply all post-processing corrections with original query context (unless disabled)
+# Source simplified post-processing library
+find_postprocess_lib() {
+  if [ -f "$(dirname "$0")/../post-processing/lib/postprocess.sh" ]; then
+    echo "$(dirname "$0")/../post-processing/lib/postprocess.sh"
+  elif [ -f "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh"
+  elif [ -f "/usr/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "/usr/lib/termgpt/post-processing/lib/postprocess.sh"
+  elif [ -f "$HOME/.config/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "$HOME/.config/termgpt/post-processing/lib/postprocess.sh"
+  else
+    return 1
+  fi
+}
+
+POSTPROCESS_LIB=$(find_postprocess_lib)
+if [ -n "$POSTPROCESS_LIB" ] && [ -r "$POSTPROCESS_LIB" ] && [ -f "$POSTPROCESS_LIB" ]; then
+  if ! is_world_writable "$POSTPROCESS_LIB"; then
+    . "$POSTPROCESS_LIB"
+  else
+    echo "Warning: Post-processing library $POSTPROCESS_LIB is world-writable, skipping"
+    # Define fallback function
+    apply_platform_corrections() {
+      printf '%s' "$1"
+    }
+  fi
+else
+  # Define fallback function if library not found
+  apply_platform_corrections() {
+    printf '%s' "$1"
+  }
+fi
+
+# Apply post-processing corrections (unless disabled)
 if [ "${TERMGPT_DISABLE_POSTPROCESSING:-0}" = "1" ]; then
   # Skip post-processing for evaluation
   :
 else
-  COMMAND=$(apply_all_corrections "$COMMAND" "" "$USER_PROMPT")
+  COMMAND=$(apply_platform_corrections "$COMMAND")
 fi
 
 # Find the check script (support multiple installation methods)

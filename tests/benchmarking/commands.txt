@@ -1,0 +1,76 @@
+# TermGPT Benchmarking Commands
+# Use these to compare different LLM models and evaluate post-processing fixes
+# Format: One command per line, no numbering
+
+# Common Daily Use Commands (10 commands)
+Find all processes consuming more than 500MB of memory
+Show files larger than 1GB modified in the last week
+List all processes listening on port 80 or 443
+Find log files older than 30 days and compress them
+Show network connections from last hour
+Find duplicate files in home directory
+Monitor CPU usage and alert if over 90%
+Search for files containing credit card patterns
+Create backup script with rotation
+Find world-writable files in system directories
+
+# Complex/Challenging Commands (15 commands)
+Monitor disk I/O for processes writing more than 10MB/sec to any filesystem
+Find all zombie processes and their parent processes, show process tree
+Monitor real-time CPU usage per core and alert when any core exceeds 90% for 30 seconds
+Search for duplicate files based on content hash in the home directory, show sizes and paths
+Find all executable files that are world-writable or owned by users other than root in system directories
+Scan local network for all active hosts and identify their operating systems and open ports
+Monitor network traffic for suspicious patterns like port scanning or brute force attempts
+Check SSL certificate expiration dates for all HTTPS services on the local network
+Extract and analyze error patterns from multiple log files, group by error type and frequency
+Process CSV files to find correlations between columns and generate statistical summaries
+Analyze email headers to detect spam patterns and trace message routing paths
+Process large text files to find near-duplicate content using fuzzy matching algorithms
+Create automated backup script that handles incremental backups with rotation and compression
+Set up monitoring for disk space usage with email alerts when partitions exceed 85% full
+Create a system health check script that validates services, disk space, memory, and network connectivity
+
+# System Monitoring & Performance (from 50-command set)
+Find all processes consuming more than 500MB of memory and sort by CPU usage
+Show network connections from the last hour that are still active, grouped by process
+Find all zombie processes and their parent processes, show process tree
+Display top 10 processes by memory usage, but exclude system processes and show full command line
+Show all open file descriptors for processes using more than 100 file handles
+Find processes that have been running for more than 7 days and consuming over 1GB RAM
+Show detailed network statistics for all interfaces, including packet errors and dropped packets
+Find all processes listening on privileged ports (1-1024) and show their binary paths
+
+# Advanced File Operations
+Find all files larger than 1GB that haven't been accessed in the last 6 months, exclude system directories
+Copy all configuration files (.conf, .cfg, .ini) modified in the last week to a backup directory with timestamp
+Find all broken symbolic links in the entire filesystem and optionally remove them
+Search for files containing sensitive data patterns (credit card numbers, SSNs) in user directories
+Locate all files with non-ASCII characters in filenames and rename them to ASCII equivalents
+Find files that are taking up the most space in each subdirectory, show top 3 per directory
+Search for recently modified files (last 24 hours) that contain specific error patterns in their content
+
+# Network & Security
+Find all network services running on non-standard ports and check if they're properly firewalled
+Analyze firewall logs for the most frequently blocked IP addresses in the last week
+Monitor DNS queries for potential malware communication or data exfiltration attempts
+Find all network interfaces in promiscuous mode and processes using them
+Detect and analyze network connections to foreign countries or suspicious IP ranges
+Monitor bandwidth usage per process and alert when any process exceeds 10Mbps sustained
+Check for rogue DHCP servers or ARP spoofing attempts on the local network
+
+# Text Processing & Data Analysis
+Parse web server logs to find the top 20 IP addresses by request count, excluding static assets
+Extract structured data from PDF documents and convert to CSV format
+Process JSON logs to find anomalous patterns or outliers in API response times
+Search through database dumps for sensitive information and redact personal data
+Analyze system configuration files for security misconfigurations or deprecated settings
+
+# System Administration & Automation
+Configure automatic log rotation for custom applications with size and age-based triggers
+Implement automated cleanup of temporary files, old logs, and cache directories with safety checks
+Set up automated security updates with rollback capability and service restart handling
+Create a deployment script that handles database migrations, service restarts, and health checks
+Implement automated SSL certificate renewal with validation and service reload
+Create a disaster recovery script that backs up critical data and tests restore procedures
+Set up automated system performance monitoring with historical data collection and alerting

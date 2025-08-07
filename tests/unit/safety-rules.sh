@@ -23,11 +23,11 @@
 
 # Set TERMGPT_RULES_PATH to use test rules
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-export TERMGPT_RULES_PATH="$SCRIPT_DIR/../share/termgpt/rules.txt"
+export TERMGPT_RULES_PATH="$SCRIPT_DIR/../../share/termgpt/rules.txt"
 
 # Source the check script
-if [ -f "$SCRIPT_DIR/../lib/termgpt-check.sh" ]; then
-  . "$SCRIPT_DIR/../lib/termgpt-check.sh"
+if [ -f "$SCRIPT_DIR/../../lib/termgpt-check.sh" ]; then
+  . "$SCRIPT_DIR/../../lib/termgpt-check.sh"
 else
   echo "Error: Cannot find termgpt-check.sh"
   exit 1
