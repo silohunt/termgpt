@@ -40,6 +40,7 @@ private/
 
 # Development notes
 CLAUDE.md
+PRODUCTION_READINESS.md
 TODO.md
 NOTES.md
 *.notes
@@ -69,4 +70,15 @@ docker-compose.override.yml
 
 # Personal scripts
 my_*.sh
-personal_*.shhomebrew-termgpt/
+personal_*.sh
+
+# Evaluation and test results
+evaluation_results_*.txt
+evaluation_summary_*.txt
+eval_vs_interactive_*.txt
+full_evaluation.log
+*_test.sh
+*_evaluation.sh
+
+# External repositories
+homebrew-termgpt/

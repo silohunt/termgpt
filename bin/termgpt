@@ -1,23 +1,27 @@
 #!/bin/sh
 #
-# termgpt — Translate natural language into safe, POSIX-compliant shell commands using a local LLM
+# termgpt — Convert natural language to shell commands using a local LLM
 #
-# Converts English prompts into shell commands via Ollama, validating them against a local ruleset. Offers options to copy or explain the generated command. 
-# Designed for fast, private, and extensible local use.
+# Platform-aware shell tool that converts natural language requests into shell commands
+# via Ollama. Features two-layer safety system and context-aware interactive shell mode.
 #
-# Usage: termgpt "<natural language request>"
+# Usage: 
+#   termgpt "<natural language request>"  # Generate command
+#   termgpt shell                          # Interactive mode with context
+#   termgpt init                           # Setup and configuration
 #
 # Requirements:
-# - Ollama running locally (model specified in script, e.g., codellama:7b-instruct)
-# - Rules & check script in ~/.config/termgpt/{termgpt-check.sh, termgpt-rules.txt}
-# - macOS tools: pbcopy (clipboard), open (explainshell); adjust for Linux as needed
+# - Ollama running locally (default: codellama:7b-instruct)  
+# - jq and curl for API interaction
+# - Platform tools auto-detected (pbcopy/xclip for clipboard)
+#
+# Safety:
+# - Two-layer system: LLM prompt refusal + termgpt-check.sh pattern matching
+# - Rules in ~/.config/termgpt/rules.txt or share/termgpt/rules.txt
 #
 # Notes:
-# - POSIX sh script with strict error handling (set -eu).
-# - Commands are checked using `check_command_danger_level()` before display.
-# - Quick actions via single-key menu: copy (c), explain (e), quit (q).
-#
-# TODO (dev): Add platform detection for clipboard (xclip) and URL opening (xdg-open) support on Linux
+# - POSIX sh with basic platform corrections for macOS/Linux compatibility
+# - Interactive shell mode maintains context from previous commands
 
 set -eu
 

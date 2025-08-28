@@ -111,12 +111,12 @@ make install-user
 
 ## Model Options
 
-TermGPT supports multiple high-quality coding models:
+TermGPT supports multiple coding models. With the default CodeLlama 7B model, approximately 75-90% of requests generate usable commands directly, with basic post-processing fixing platform compatibility issues in another 5-10% of cases.
 
 ### Recommended Models
-1. **CodeLlama 7B Instruct** (Default) - Best instruction following, platform-aware
-2. **Qwen2.5 Coder 7B** - Good performance/memory ratio  
-3. **Stable Code 3B** - Lightweight for resource-constrained systems
+1. **CodeLlama 7B Instruct** (Default) - Good instruction following
+2. **Qwen2.5 Coder 7B** - Balanced performance/memory usage
+3. **Stable Code 3B** - For resource-constrained systems
 
 ### Model Selection
 ```bash

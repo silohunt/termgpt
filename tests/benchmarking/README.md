@@ -6,17 +6,19 @@ Compare different LLM models and see how post-processing fixes improve command g
 
 ## Usage
 
-Test different models on the same commands to see quality differences:
+The benchmark now correctly shows post-processing by applying corrections to the SAME LLM output (not running the LLM twice).
 
 ```bash
-# Test with codellama:7b
-TERMGPT_MODEL=codellama:7b-instruct ./benchmark.sh "Find processes using more than 500MB memory"
+# Basic usage
+./benchmark.sh "find large files"
 
-# Test with larger model
-TERMGPT_MODEL=codellama:33b-instruct ./benchmark.sh "Find processes using more than 500MB memory"
+# Test different models
+./benchmark.sh "find large files" codellama:33b-instruct
 
-# Test with different model family
-TERMGPT_MODEL=llama3:8b-instruct ./benchmark.sh "Find processes using more than 500MB memory"
+# Commands that trigger post-processing fixes:
+./benchmark.sh "show network connections on port 80"  # May trigger netstat -p fix
+./benchmark.sh "find files modified last week"         # Triggers mtime +7 -> -7 fix
+./benchmark.sh "compress log files"                    # May add *.log filter
 ```
 
 ## Post-Processing Fixes
