@@ -19,7 +19,7 @@ termgpt shell --history
 
 ```
 $ termgpt shell
-TermGPT v0.9.4 (codellama:7b-instruct) - Interactive Mode
+TermGPT v0.9.5 (codellama:7b-instruct) - Interactive Mode
 Type .help for commands, .quit to exit
 
 termgpt> find all shell scripts
@@ -85,7 +85,7 @@ termgpt> .quit
 | `.run` | Execute command (with confirmation) |
 | `.save [name]` | Save command as alias |
 
-## Context Awareness (New in v0.9.4)
+## Context Awareness (New in v0.9.5)
 
 The shell now maintains conversational context from your previous commands, enabling natural pronoun usage and command chaining:
 

@@ -15,7 +15,7 @@
 
 set -eu
 
-VERSION="0.9.4"
+VERSION="0.9.5"
 SCRIPT_DIR="$(dirname "$0")"
 
 # REPL state

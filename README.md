@@ -196,7 +196,7 @@ termgpt shell
 
 # Example session with context carryover:
 $ termgpt shell
-TermGPT v0.9.4 (codellama:7b-instruct) - Interactive Mode
+TermGPT v0.9.5 (codellama:7b-instruct) - Interactive Mode
 Type .help for commands, .quit to exit
 
 termgpt> find all shell scripts
