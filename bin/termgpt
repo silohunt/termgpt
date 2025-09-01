@@ -25,7 +25,7 @@
 
 set -eu
 
-VERSION="0.9.5"
+VERSION="0.9.6"
 
 # Handle subcommands and special flags
 if [ "$#" -ge 1 ]; then

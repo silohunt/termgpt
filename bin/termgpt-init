@@ -17,7 +17,7 @@
 set -eu
 
 # Version should match main termgpt
-VERSION="0.9.5"
+VERSION="0.9.6"
 
 # Default values
 HEADLESS=0
