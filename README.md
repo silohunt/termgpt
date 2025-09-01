@@ -1,5 +1,11 @@
 # TermGPT
 
+[![Version](https://img.shields.io/badge/version-0.9.5-blue.svg)](https://github.com/silohunt/termgpt/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)](README.md#platform-features)
+[![Model](https://img.shields.io/badge/model-codellama%3A7b-green.svg)](README.md#model-options)
+[![Privacy](https://img.shields.io/badge/privacy-100%25%20local-purple.svg)](README.md#privacy--history)
+
 A platform-aware shell tool that converts natural language to Unix commands using a local LLM.
 
 ## Features
@@ -111,7 +117,7 @@ make install-user
 
 ## Model Options
 
-TermGPT supports multiple coding models. With the default CodeLlama 7B model, approximately 75-90% of requests generate usable commands directly, with basic post-processing fixing platform compatibility issues in another 5-10% of cases.
+TermGPT supports any model available via Ollama. CodeLlama 7B was chosen as the default to ensure usability on Linux systems with onboard graphics. Testing on 59 commands of varying complexity (tests/benchmarking/commands.txt) shows 91.5% generate usable commands directly, with basic post-processing fixing platform compatibility issues in additional cases.
 
 ### Recommended Models
 1. **CodeLlama 7B Instruct** (Default) - Good instruction following
@@ -141,20 +147,25 @@ termgpt --model
 
 ## Privacy & History
 
-TermGPT logs commands locally for LLM fine-tuning (never uploaded):
+TermGPT can optionally log commands locally in JSONL format suitable for LLM fine-tuning:
 ```bash
-# View history
+# Enable history logging (disabled by default)
+export TERMGPT_HISTORY=true
+
+# View history (when enabled)
 termgpt-history show
 
-# Export for training
+# Export for training data
 termgpt-history export training-data.jsonl
 
 # Disable logging
-termgpt-history disable
+export TERMGPT_HISTORY=false
 
 # Clear all history
 termgpt-history clear
 ```
+
+**Note**: History logging is disabled by default. Enable it only if you plan to use the data for fine-tuning your own models.
 
 ## Uninstalling
 

@@ -6,7 +6,7 @@
 # for LLM fine-tuning. Each entry contains context, input, and output.
 
 # History configuration
-HISTORY_ENABLED="${TERMGPT_HISTORY:-true}"
+HISTORY_ENABLED="${TERMGPT_HISTORY:-false}"
 HISTORY_FILE="${TERMGPT_HISTORY_FILE:-$HOME/.config/termgpt/history.jsonl}"
 HISTORY_MAX_ENTRIES="${TERMGPT_HISTORY_MAX:-1000}"
 

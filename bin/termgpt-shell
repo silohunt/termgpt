@@ -64,6 +64,8 @@ EOF
   find_history_lib() {
     if [ -f "$SCRIPT_DIR/../lib/termgpt-history.sh" ]; then
       echo "$SCRIPT_DIR/../lib/termgpt-history.sh"
+    elif [ -f "/opt/homebrew/lib/termgpt/termgpt-history.sh" ]; then
+      echo "/opt/homebrew/lib/termgpt/termgpt-history.sh"
     elif [ -f "/usr/local/lib/termgpt/termgpt-history.sh" ]; then
       echo "/usr/local/lib/termgpt/termgpt-history.sh"
     elif [ -f "/usr/lib/termgpt/termgpt-history.sh" ]; then

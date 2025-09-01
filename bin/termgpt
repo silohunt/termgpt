@@ -155,6 +155,8 @@ find_platform_config() {
     echo "$HOME/.config/termgpt/platform.conf"
   elif [ -f "$(dirname "$0")/../lib/termgpt-platform.sh" ]; then
     echo "$(dirname "$0")/../lib/termgpt-platform.sh"
+  elif [ -f "/opt/homebrew/lib/termgpt/termgpt-platform.sh" ]; then
+    echo "/opt/homebrew/lib/termgpt/termgpt-platform.sh"
   elif [ -f "/usr/local/lib/termgpt/termgpt-platform.sh" ]; then
     echo "/usr/local/lib/termgpt/termgpt-platform.sh"
   elif [ -f "/usr/lib/termgpt/termgpt-platform.sh" ]; then
@@ -221,6 +223,8 @@ fi
 find_postprocess_lib() {
   if [ -f "$(dirname "$0")/../post-processing/lib/postprocess.sh" ]; then
     echo "$(dirname "$0")/../post-processing/lib/postprocess.sh"
+  elif [ -f "/opt/homebrew/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "/opt/homebrew/lib/termgpt/post-processing/lib/postprocess.sh"
   elif [ -f "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
     echo "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh"
   elif [ -f "/usr/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
@@ -284,6 +288,8 @@ Request: $USER_PROMPT"
 find_token_counter() {
   if [ -f "$(dirname "$0")/../lib/token-counter.py" ]; then
     echo "$(dirname "$0")/../lib/token-counter.py"
+  elif [ -f "/opt/homebrew/lib/termgpt/token-counter.py" ]; then
+    echo "/opt/homebrew/lib/termgpt/token-counter.py"
   elif [ -f "/usr/local/lib/termgpt/token-counter.py" ]; then
     echo "/usr/local/lib/termgpt/token-counter.py"
   elif [ -f "/usr/lib/termgpt/token-counter.py" ]; then
@@ -386,6 +392,8 @@ fi
 find_postprocess_lib() {
   if [ -f "$(dirname "$0")/../post-processing/lib/postprocess.sh" ]; then
     echo "$(dirname "$0")/../post-processing/lib/postprocess.sh"
+  elif [ -f "/opt/homebrew/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
+    echo "/opt/homebrew/lib/termgpt/post-processing/lib/postprocess.sh"
   elif [ -f "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
     echo "/usr/local/lib/termgpt/post-processing/lib/postprocess.sh"
   elif [ -f "/usr/lib/termgpt/post-processing/lib/postprocess.sh" ]; then
@@ -429,6 +437,8 @@ find_check_script() {
   if [ -f "$(dirname "$0")/../lib/termgpt-check.sh" ]; then
     echo "$(dirname "$0")/../lib/termgpt-check.sh"
   # 2. Check system installation
+  elif [ -f "/opt/homebrew/lib/termgpt/termgpt-check.sh" ]; then
+    echo "/opt/homebrew/lib/termgpt/termgpt-check.sh"
   elif [ -f "/usr/local/lib/termgpt/termgpt-check.sh" ]; then
     echo "/usr/local/lib/termgpt/termgpt-check.sh"
   elif [ -f "/usr/lib/termgpt/termgpt-check.sh" ]; then
@@ -460,6 +470,8 @@ fi
 find_history_lib() {
   if [ -f "$(dirname "$0")/../lib/termgpt-history.sh" ]; then
     echo "$(dirname "$0")/../lib/termgpt-history.sh"
+  elif [ -f "/opt/homebrew/lib/termgpt/termgpt-history.sh" ]; then
+    echo "/opt/homebrew/lib/termgpt/termgpt-history.sh"
   elif [ -f "/usr/local/lib/termgpt/termgpt-history.sh" ]; then
     echo "/usr/local/lib/termgpt/termgpt-history.sh"
   elif [ -f "/usr/lib/termgpt/termgpt-history.sh" ]; then
